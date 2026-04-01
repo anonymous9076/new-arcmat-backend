@@ -6,7 +6,7 @@ dotenv.config();
 
 const inspectRetailers = async () => {
     try {
-        const uri = process.env.database;
+        const uri = process.env.DATABASE;
         await mongoose.connect(uri);
         const retailers = await Usertable.find({ role: 'retailer' }).lean();
 

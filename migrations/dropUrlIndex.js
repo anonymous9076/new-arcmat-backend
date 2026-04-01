@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 // Load .env from backend root
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
-const MONGODB_URI = process.env.database || process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+const MONGODB_URI = process.env.DATABASE || process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
 
 async function dropOldUrlIndex() {
     try {

@@ -8,7 +8,7 @@ dotenv.config();
 
 async function checkData() {
     try {
-        await mongoose.connect(process.env.database);
+        await mongoose.connect(process.env.DATABASE);
         console.log('Connected to MongoDB');
 
         const retailerProductCount = await RetailerProduct.countDocuments();

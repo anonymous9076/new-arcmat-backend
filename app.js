@@ -80,7 +80,7 @@ const app = express();
 
 // Middle-wares
 app.use(cors({
-  origin: ["https://arcmat-frontend-one.vercel.app", "http://localhost:3000", "http://localhost:5173","https://arcmat.in","https://www.arcmat.in"],
+  origin: ["https://arcmat-frontend-one.vercel.app", "http://localhost:3000", "http://localhost:5173", "https://arcmat.in", "https://www.arcmat.in"],
   credentials: true
 }));
 app.use(express.json({ limit: "500mb" }));
@@ -141,17 +141,27 @@ app.use('/', (req, res) => {
 let isConnected = false;
 
 async function initApp() {
-  if (!isConnected) {
-    await connectdb();
-    isConnected = true;
-    console.log("Database connected");
+  try {
+    if (!isConnected) {
+      await connectdb();
+      isConnected = true;
+      console.log("Initialization: Database connected successfully");
+    }
+  } catch (error) {
+    console.error("Initialization error:", error);
+    throw error;
   }
 }
 
 // Vercel handler
-export default async function handler(req, res) {
-  await initApp();
-  return app(req, res);
+export default async function (req, res) {
+  try {
+    await initApp();
+    return app(req, res);
+  } catch (err) {
+    console.error("Vercel Invocation Error:", err);
+    res.status(500).json({ status: "failed", message: "Internal server error during function invocation" });
+  }
 }
 
 // Local server support
@@ -159,8 +169,16 @@ if (process.env.VERCEL !== "1") {
   const port = process.env.PORT || 8000;
 
   initApp().then(() => {
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       console.log(`Server running on port ${port}`);
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`ERROR: Port ${port} is already in use.`);
+        console.error(`To fix this, run: Stop-Process -Id (Get-NetTCPConnection -LocalPort ${port}).OwningProcess -Force`);
+        process.exit(1);
+      } else {
+        console.error('Server error:', err);
+      }
     });
   });
 }

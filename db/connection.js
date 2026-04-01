@@ -2,9 +2,11 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 dotenv.config();
 
-const MONGO_URI = process.env.database;
+// Flexible check for environment variable casing (essential for Vercel/Linux)
+const MONGO_URI = process.env.database || process.env.DATABASE || process.env.MONGODB_URI;
 
 if (!MONGO_URI) {
+  console.error("CRITICAL: MongoDB connection string missing (tried: database, DATABASE, MONGODB_URI)");
   throw new Error("MongoDB connection string missing");
 }
 

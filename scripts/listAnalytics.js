@@ -6,10 +6,10 @@ dotenv.config();
 
 const listAnalytics = async () => {
     try {
-        const uri = process.env.database;
+        const uri = process.env.DATABASE;
         await mongoose.connect(uri);
         const records = await RetailerBrandSelection.find().lean();
-      
+
         process.exit(0);
     } catch (error) {
         console.error(error);

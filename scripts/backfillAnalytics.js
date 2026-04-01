@@ -8,7 +8,7 @@ dotenv.config();
 
 const backfillAnalytics = async () => {
     try {
-        const uri = process.env.database || 'mongodb://localhost:27017/arcmat';
+        const uri = process.env.DATABASE || 'mongodb://localhost:27017/arcmat';
         console.log(`Connecting to: ${uri}`);
         await mongoose.connect(uri);
         console.log('Connected to MongoDB');
