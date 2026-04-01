@@ -1,7 +1,7 @@
 import EstimatedCost from "../../models/estimatedCost.js";
 import Moodboard from "../../models/moodboard.js";
 import Project from "../../models/project.js";
-import { calculateTotalCost } from "./createestimatedcost.js";
+import { calculateTotalCost } from "./createEstimatedCost.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
 
 const updateestimatedcost = async (req, res) => {
