@@ -425,7 +425,7 @@ const bulkimport = async (req, res) => {
                     if (row['Images']) {
                         const imageNames = row['Images'].split(',').map(img => img.trim());
                         for (const imageName of imageNames) {
-                            const matchedImage = await findImageOnCloudinary(imageName, brandObjectId.toString());
+                            const matchedImage = await findImageOnS3(imageName, brandObjectId.toString());
                             if (matchedImage) {
                                 productImages.push(matchedImage); // Store { public_id, secure_url }
                             } else {
