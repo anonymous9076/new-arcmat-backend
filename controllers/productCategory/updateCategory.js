@@ -1,7 +1,7 @@
 import category from "../../models/category.js";
 import slugify from "slugify";
 import { success, fail } from "../../middlewares/responseHandler.js";
-import { cloudinaryUpload, cloudinaryDelete } from "../../utils/cloudinaryupload.js";
+import { s3Upload, s3Delete } from "../../utils/s3upload.js";
 
 
 const CategoryModel = category;
@@ -79,16 +79,16 @@ const updatecategory = async (req, res) => {
       categoryobj.level = level;
     }
 
-    // Handle image upload with Cloudinary
+    // Handle image upload with S3
     if (req.files && (req.files.category_image || Object.keys(req.files).length > 0)) {
       const files = req.files.category_image || req.files;
-      const uploadResults = await cloudinaryUpload(req.user?._id || 'admin', files, 'categories');
+      const uploadResults = await s3Upload(req.user?._id || 'admin', files, 'categories');
       if (uploadResults.length > 0) {
         categoryobj.image = uploadResults[0];
 
-        // Delete old image if it was a Cloudinary object
+        // Delete old image if it was on S3
         if (existingCategory.image && existingCategory.image.public_id) {
-          cloudinaryDelete(existingCategory.image.public_id).catch(err => console.error('Cloudinary cleanup error during category update:', err));
+          s3Delete(existingCategory.image.public_id).catch(err => console.error('S3 cleanup error during category update:', err));
         }
       }
     }

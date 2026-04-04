@@ -2,7 +2,7 @@ import multer from "multer";
 import path from "path";
 
 
-// Minimalist memory storage configuration for direct Cloudinary uploads
+// Minimalist memory storage configuration for direct S3 uploads
 const storage = multer.memoryStorage();
 
 
@@ -22,7 +22,7 @@ const fileFilter = (req, file, cb) => {
 
 // Single consolidated uploader - no file size limit
 // const limits = { fileSize: 5 * 1024 * 1024 }; // 5MB limit
-// Single consolidated uploader - all files go to temp then Cloudinary
+// Single consolidated uploader - all files go to temp then S3
 // const upload = multer({ storage, limits, fileFilter });
 const upload = multer({ storage, fileFilter });
 

@@ -1,7 +1,7 @@
 import category from "../../models/category.js";
 import Product from "../../models/product.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryDelete } from "../../utils/cloudinaryupload.js";
+import { s3Delete } from "../../utils/s3upload.js";
 
 
 const deletecategory = async (req, res) => {
@@ -30,9 +30,9 @@ const deletecategory = async (req, res) => {
     const productUsing = await Product.findOne({ categoryId: id });
     if (productUsing) return fail(res, new Error('Cannot delete category assigned to products'), 400);
 
-    // Cleanup image from Cloudinary
+    // Cleanup image from S3
     if (existingCategory.image && existingCategory.image.public_id) {
-      cloudinaryDelete(existingCategory.image.public_id).catch(err => console.error('Cloudinary cleanup error during category deletion:', err));
+      s3Delete(existingCategory.image.public_id).catch(err => console.error('S3 cleanup error during category deletion:', err));
     }
 
     const categories = await category.findByIdAndDelete(id);

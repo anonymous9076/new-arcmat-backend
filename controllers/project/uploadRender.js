@@ -1,6 +1,6 @@
 import Project from "../../models/project.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
-import { cloudinaryUpload, cloudinaryDelete } from "../../utils/cloudinaryupload.js";
+import { s3Upload, s3Delete } from "../../utils/s3upload.js";
 import InspirationGallery from "../../models/inspirationgallery.js";
 
 export const uploadRender = async (req, res) => {
@@ -22,7 +22,7 @@ export const uploadRender = async (req, res) => {
         }
 
         const files = req.files.image || req.files.file;
-        const uploadResults = await cloudinaryUpload(req.user.id, files, 'project_renders');
+        const uploadResults = await s3Upload(req.user.id, files, 'project_renders');
 
         let newRenderData = null;
         if (uploadResults && uploadResults.length > 0) {
@@ -68,7 +68,7 @@ export const deleteRender = async (req, res) => {
         const renderToDelete = project.renders[renderIndex];
 
         if (renderToDelete.public_id) {
-            await cloudinaryDelete(renderToDelete.public_id);
+            await s3Delete(renderToDelete.public_id);
         }
 
         await InspirationGallery.deleteMany({ renderId: renderToDelete.public_id });

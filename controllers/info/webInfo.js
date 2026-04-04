@@ -1,6 +1,6 @@
 import website_info from "../../models/websiteInfo.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload } from '../../utils/cloudinaryupload.js';
+import { s3Upload } from '../../utils/s3upload.js';
 
 
 
@@ -29,11 +29,11 @@ const webinfo = async (req, res) => {
       }
     };
 
-    // Handle logo upload with Cloudinary
+    // Handle logo upload with S3
     let logo = null;
     if (req.files && (req.files.logo || Object.keys(req.files).length > 0)) {
       const files = req.files.logo || req.files;
-      const uploadResults = await cloudinaryUpload('admin', files, 'website');
+      const uploadResults = await s3Upload('admin', files, 'website');
       if (uploadResults.length > 0) {
         logo = uploadResults[0];
       }

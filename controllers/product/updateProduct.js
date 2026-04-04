@@ -6,7 +6,7 @@ import Usertable from "../../models/user.js";
 import Brand from "../../models/brand.js";
 import mongoose from "mongoose";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload, cloudinaryDelete } from "../../utils/cloudinaryupload.js";
+import { s3Upload, s3Delete } from "../../utils/s3upload.js";
 
 
 const updateproduct = async (req, res) => {
@@ -113,7 +113,7 @@ const updateproduct = async (req, res) => {
       finalImages = existingProduct.product_images || [];
     }
 
-    // Determine which images were removed for Cloudinary cleanup
+    // Determine which images were removed for S3 cleanup
     const existingPublicIds = (existingProduct.product_images || [])
       .map(img => img.public_id)
       .filter(id => !!id);
@@ -130,7 +130,7 @@ const updateproduct = async (req, res) => {
       const brandId = (rawBrandId?._id || rawBrandId?.id || rawBrandId).toString();
 
       const filesToUpload = req.files.product_images || req.files;
-      const uploadResults = await cloudinaryUpload(brandId, filesToUpload, 'products');
+      const uploadResults = await s3Upload(brandId, filesToUpload, 'products');
       
       // For single image enforcement, new images should replace or be combined then capped
       finalImages = [...finalImages, ...uploadResults];
@@ -145,9 +145,9 @@ const updateproduct = async (req, res) => {
     // Always update product_images with the final set
     data.product_images = finalImages;
 
-    // Cleanup deleted images from Cloudinary
+    // Cleanup deleted images from S3
     if (publicIdsToDelete.length > 0) {
-      cloudinaryDelete(publicIdsToDelete).catch(err => console.error('Cloudinary cleanup error during update:', err));
+      s3Delete(publicIdsToDelete).catch(err => console.error('S3 cleanup error during update:', err));
     }
 
 

@@ -1,6 +1,6 @@
 import website_info from "../../models/websiteInfo.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload, cloudinaryDelete } from '../../utils/cloudinaryupload.js';
+import { s3Upload, s3Delete } from '../../utils/s3upload.js';
 
 
 const editwebinfo = async (req, res) => {
@@ -49,13 +49,13 @@ const editwebinfo = async (req, res) => {
 
     if (req.files && (req.files.logo || Object.keys(req.files).length > 0)) {
       const files = req.files.logo || req.files;
-      const uploadResults = await cloudinaryUpload('admin', files, 'website');
+      const uploadResults = await s3Upload('admin', files, 'website');
       if (uploadResults.length > 0) {
         updatedate.logo = uploadResults[0];
 
-        // Delete old logo if it was a Cloudinary object
+        // Delete old logo if it was an S3 object
         if (existingInfo && existingInfo.logo && existingInfo.logo.public_id) {
-          cloudinaryDelete(existingInfo.logo.public_id).catch(err => console.error('Cloudinary cleanup error during webinfo update:', err));
+          s3Delete(existingInfo.logo.public_id).catch(err => console.error('S3 cleanup error during webinfo update:', err));
         }
       }
     }

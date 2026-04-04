@@ -1,6 +1,6 @@
 import Project from "../../models/project.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload } from "../../utils/cloudinaryupload.js";
+import { s3Upload } from "../../utils/s3upload.js";
 
 /**
  * Update an existing project belonging to the authenticated architect.
@@ -38,7 +38,7 @@ const updateProject = async (req, res) => {
         // Handle File Upload for coverImage
         if (req.files && (req.files.coverImage || req.files.file)) {
             const files = req.files.coverImage || req.files.file;
-            const uploadResults = await cloudinaryUpload(architectId, files, 'projects/covers');
+            const uploadResults = await s3Upload(architectId, files, 'projects/covers');
             if (uploadResults && uploadResults.length > 0) {
                 project.coverImage = uploadResults[0].secure_url;
             }

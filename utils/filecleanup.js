@@ -1,7 +1,7 @@
-import { cloudinaryDelete } from './cloudinaryupload.js';
+import { s3Delete } from './s3upload.js';
 
 /**
- * Clean up images from Cloudinary (and optionally local filesystem)
+ * Clean up images from S3 (and optionally local filesystem)
  * @param {Array} images Array of image objects { public_id, secure_url } or strings
  */
 export const cleanupImages = async (images) => {
@@ -13,9 +13,9 @@ export const cleanupImages = async (images) => {
 
     if (publicIdsToDelete.length > 0) {
         try {
-            await cloudinaryDelete(publicIdsToDelete);
+            await s3Delete(publicIdsToDelete);
         } catch (err) {
-            console.error('Failed to delete assets from Cloudinary:', err);
+            console.error('Failed to delete assets from S3:', err);
         }
     }
 };

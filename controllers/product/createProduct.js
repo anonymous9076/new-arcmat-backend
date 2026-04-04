@@ -5,7 +5,7 @@ import slugify from "slugify";
 import Usertable from "../../models/user.js";
 import mongoose from "mongoose";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload } from "../../utils/cloudinaryupload.js";
+import { s3Upload } from "../../utils/s3upload.js";
 
 import { generateProductUniqueID } from "../../utils/productUtils.js";
 
@@ -88,13 +88,13 @@ const createproduct = async (req, res) => {
 
     const finalBrand = (rawFinalBrand?._id || rawFinalBrand?.id || rawFinalBrand).toString();
 
-    // Handle multiple images with Cloudinary
+    // Handle multiple images with S3
     let finalProductImages = [];
     if (req.files) {
       const files = req.files.product_images || req.files;
       if (files && (Array.isArray(files) || (typeof files === 'object' && Object.keys(files).length > 0))) {
-        // Use our utility to upload to Cloudinary
-        const uploadResults = await cloudinaryUpload(finalBrand, files, 'products');
+        // Use our utility to upload to S3
+        const uploadResults = await s3Upload(finalBrand, files, 'products');
         finalProductImages = uploadResults; // Array of { public_id, secure_url }
       }
     }

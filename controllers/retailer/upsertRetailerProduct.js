@@ -21,8 +21,13 @@ const upsertRetailerProduct = async (req, res) => {
         const id = req.params.id; // Optional: for PATCH
         console.log(req.body, 'dsf')
         // 1. Validation
-        if (!productId || !variantId || mrp_price === undefined || selling_price === undefined || stock === undefined) {
-            return fail(res, new Error('Missing required fields: productId, variantId, mrp_price, selling_price, stock'), 400);
+        if (!productId || !variantId || mrp_price === undefined || selling_price === undefined) {
+            return fail(res, new Error('Missing required fields: productId, variantId, mrp_price, selling_price'), 400);
+        }
+
+        // if stock is empty then do nothing
+        if (stock === undefined || stock === null || stock === '') {
+            return success(res, { message: 'No changes made (stock is empty)' }, 200);
         }
 
         // 2. Check Product existence and authorized brand
@@ -61,7 +66,7 @@ const upsertRetailerProduct = async (req, res) => {
                 // Increasing override stock - check if brand has enough
                 const isUnlimited = variantDoc.stock === undefined || variantDoc.stock === null;
                 if (!isUnlimited && variantDoc.stock < stockDiff) {
-                    return fail(res, new Error(`Insufficient brand stock. Only ${variantDoc.stock} additional units available.`), 400);
+                    return fail(res, new Error(`insufficient stock, Please contact with brand`), 400);
                 }
             }
 
@@ -78,16 +83,20 @@ const upsertRetailerProduct = async (req, res) => {
                 { new: true, runValidators: true }
             );
         } else {
-            // Creating a new override
+            // Creating a new override / Upsert case
+            // Check if override already exists to calculate stock difference accurately
+            const existingOverride = await RetailerProduct.findOne({ retailerId, productId, variantId });
+            const stockDiff = existingOverride ? requestedStock - existingOverride.stock : requestedStock;
+
             // Check if brand has enough stock
             const isUnlimited = variantDoc.stock === undefined || variantDoc.stock === null;
-            if (!isUnlimited && variantDoc.stock < requestedStock) {
-                return fail(res, new Error(`Insufficient brand stock. Only ${variantDoc.stock} units available.`), 400);
+            if (!isUnlimited && variantDoc.stock < stockDiff) {
+                return fail(res, new Error(`insufficient stock, Please contact with brand`), 400);
             }
 
             // Perform atomic update on original variant stock
             if (!isUnlimited) {
-                await variant.findByIdAndUpdate(variantId, { $inc: { stock: -requestedStock } });
+                await variant.findByIdAndUpdate(variantId, { $inc: { stock: -stockDiff } });
             }
 
             // Use findOneAndUpdate with upsert for the compound unique key

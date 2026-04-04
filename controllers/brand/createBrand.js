@@ -3,7 +3,7 @@ import Usertable from "../../models/user.js";
 import slugify from 'slugify';
 import { success, fail } from '../../middlewares/responseHandler.js';
 import mongoose from 'mongoose';
-import { cloudinaryUpload } from '../../utils/cloudinaryupload.js';
+import { s3Upload } from '../../utils/s3upload.js';
 
 
 const createbrand = async (req, res) => {
@@ -11,11 +11,11 @@ const createbrand = async (req, res) => {
     const { name, country, description, website, isActive, showOnHomepage, shippingAddress, billingAddress } = req.body;
     if (!name) return fail(res, new Error('name is required'), 422);
 
-    // Handle logo upload with Cloudinary
+    // Handle logo upload with S3
     let logo = req.body.logo;
     if (req.files && (req.files.brand_image || req.files.logo || Object.keys(req.files).length > 0)) {
       const files = req.files.brand_image || req.files.logo || req.files;
-      const uploadResults = await cloudinaryUpload(req.user?.id || 'admin', files, 'brands');
+      const uploadResults = await s3Upload(req.user?.id || 'admin', files, 'brands');
       if (uploadResults.length > 0) {
         logo = uploadResults[0]; // Brand logo is usually a single image
       }

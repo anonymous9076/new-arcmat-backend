@@ -1,7 +1,7 @@
 import AdmZip from 'adm-zip';
 import path from 'path';
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload } from '../../utils/cloudinaryupload.js';
+import { s3Upload } from '../../utils/s3upload.js';
 
 const bulkImageUpload = async (req, res) => {
     try {
@@ -42,7 +42,8 @@ const bulkImageUpload = async (req, res) => {
             // Create a pseudo-Multer file object using memory buffer
             filesToUpload.push({
                 buffer: entry.getData(),
-                originalname: originalName
+                originalname: originalName,
+                mimetype: `image/${ext.slice(1)}`
             });
         }
 
@@ -50,8 +51,8 @@ const bulkImageUpload = async (req, res) => {
             return fail(res, new Error('No valid image files found in ZIP'), 400);
         }
 
-        // Upload to Cloudinary using our utility (now handles buffers)
-        const uploadResults = await cloudinaryUpload(brandId, filesToUpload, 'products');
+        // Upload to S3 using our utility (now handles buffers)
+        const uploadResults = await s3Upload(brandId, filesToUpload, 'products');
 
         // Map original names back to upload results
         uploadResults.forEach((result, index) => {
@@ -60,7 +61,7 @@ const bulkImageUpload = async (req, res) => {
         });
 
         return success(res, {
-            message: `Successfully uploaded ${uploadResults.length} images to Cloudinary`,
+            message: `Successfully uploaded ${uploadResults.length} images to S3`,
             brandId,
             imageMapping,
             uploadedCount: uploadResults.length

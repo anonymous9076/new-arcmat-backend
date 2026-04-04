@@ -24,51 +24,53 @@ const parseAttributes = (attrString) => {
     return attributes;
 };
 
-import cloudinary from "../../config/cloudinary.js";
+import { listObjects } from "../../utils/s3upload.js";
 
 const imageCache = new Map();
 
 /**
- * Finds an image on Cloudinary by its original name for a specific brand.
+ * Finds an image on S3 by its original name for a specific brand.
  * 
  * @param {string} imageName - Original filename (e.g., "myimage.jpg")
- * @param {string} brandId - The brand ID used for the user_uploads folder/prefix
- * @returns {Promise<Object|null>} - Cloudinary resource object or null
+ * @param {string} brandId - The brand ID used for the S3 Key prefix
+ * @returns {Promise<Object|null>} - S3 object metadata or null
  */
-const findImageOnCloudinary = async (imageName, brandId) => {
+const findImageOnS3 = async (imageName, brandId) => {
     try {
-        // Cache resources per brand to avoid hitting rate limits
+        // Cache resources per brand to avoid repetitive listing
         let resources;
         if (imageCache.has(brandId)) {
             resources = imageCache.get(brandId);
         } else {
             // Fetch all resources with this brand's prefix in the 'products' folder
-            // Note: This uses the Admin API and is limited to 500 by default (can paginate if needed)
-            const result = await cloudinary.api.resources({
-                type: 'upload',
-                prefix: `products/${brandId}_`,
-                max_results: 500
-            });
-            resources = result.resources || [];
+            const result = await listObjects(`products/${brandId}_`);
+            resources = result || [];
             imageCache.set(brandId, resources);
         }
 
         const baseName = path.parse(imageName).name;
-        // The public_id produced by our utility is `products/${brandId}_${baseName}`
-        const targetPublicId = `products/${brandId}_${baseName}`;
-
-        const matched = resources.find(res => res.public_id === targetPublicId);
+        // In S3, the key matches what we uploaded. Since we add a timestamp, 
+        // we check if the key starts with the brandId_baseName combination.
+        const matched = resources.find(res => {
+            const keyParts = res.Key.split('/');
+            const fileName = keyParts[keyParts.length - 1];
+            return fileName.startsWith(`${brandId}_${baseName}_`);
+        });
 
         if (matched) {
+            const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
+            const REGION = process.env.AWS_REGION || 'us-east-1';
+            const secureUrl = `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${matched.Key}`;
+
             return {
-                public_id: matched.public_id,
-                secure_url: matched.secure_url
+                public_id: matched.Key,
+                secure_url: secureUrl
             };
         }
 
         return null;
     } catch (error) {
-        console.error(`Error finding image ${imageName} on Cloudinary for brand ${brandId}:`, error);
+        console.error(`Error finding image ${imageName} on S3 for brand ${brandId}:`, error);
         return null;
     }
 };
@@ -269,7 +271,7 @@ const bulkimport = async (req, res) => {
                         const parentBrandId = parentProduct.brand.toString();
 
                         for (const imageName of imageNames) {
-                            const matchedImage = await findImageOnCloudinary(imageName, parentBrandId);
+                            const matchedImage = await findImageOnS3(imageName, parentBrandId);
                             if (matchedImage) {
                                 variantImages.push(matchedImage); // Store { public_id, secure_url }
                             } else {

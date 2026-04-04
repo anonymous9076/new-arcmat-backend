@@ -1,7 +1,7 @@
 import Moodboard from "../../models/moodboard.js";
 import Project from "../../models/project.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
-import { cloudinaryUpload } from "../../utils/cloudinaryupload.js";
+import { s3Upload } from "../../utils/s3upload.js";
 import { sanitizeAndUpload } from "../../utils/moodboardSanitizer.js";
 
 const updatemoodboard = async (req, res) => {
@@ -36,7 +36,7 @@ const updatemoodboard = async (req, res) => {
         // Handle File Upload for coverImage
         if (req.files && (req.files.coverImage || req.files.file)) {
             const files = req.files.coverImage || req.files.file;
-            const uploadResults = await cloudinaryUpload(userId, files, 'moodboards/covers');
+            const uploadResults = await s3Upload(userId, files, 'moodboards/covers');
             if (uploadResults && uploadResults.length > 0) {
                 updateData.coverImage = uploadResults[0].secure_url;
             }

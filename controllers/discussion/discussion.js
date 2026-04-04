@@ -1,6 +1,6 @@
 import Discussion from "../../models/discussion.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload } from "../../utils/cloudinaryupload.js";
+import { s3Upload } from "../../utils/s3upload.js";
 import mongoose from 'mongoose';
 
 /**
@@ -20,10 +20,10 @@ export const postComment = async (req, res) => {
                 const folder = `discussions/${projectId}`;
                 // BUG FIX 1: Renamed map callback param from `res` to `result`
                 // to avoid shadowing the Express `res` object
-                const uploadResults = await cloudinaryUpload(folder, req.files, 'discussions');
+                const uploadResults = await s3Upload(authorId, req.files, folder);
                 uploadedAttachments = uploadResults.map(result => result.secure_url);
             } catch (uploadErr) {
-                console.error("Cloudinary upload failed for discussion:", uploadErr);
+                console.error("S3 upload failed for discussion:", uploadErr);
                 return fail(res, new Error("Failed to upload attachments"), 500);
             }
         }

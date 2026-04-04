@@ -1,16 +1,16 @@
 import banner from "../../models/banner.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload } from '../../utils/cloudinaryupload.js';
+import { s3Upload } from '../../utils/s3upload.js';
 
 
 const createbanner = async (req, res) => {
   try {
     const { banner_name, banner_link, banner_alt, status, description, banner_type } = req.body;
-    // Handle banner upload with Cloudinary
+    // Handle banner upload with S3
     let bannerDetails = null;
     if (req.files && (req.files.banner || Object.keys(req.files).length > 0)) {
       const files = req.files.banner || req.files;
-      const uploadResults = await cloudinaryUpload('admin', files, 'banners');
+      const uploadResults = await s3Upload('admin', files, 'banners');
       if (uploadResults.length > 0) {
         bannerDetails = uploadResults[0];
       }

@@ -1,10 +1,10 @@
-import { cloudinaryUpload } from './cloudinaryupload.js';
+import { s3Upload } from './s3upload.js';
 
 /**
- * Recursively scans an object for base64 image strings and uploads them to Cloudinary.
+ * Recursively scans an object for base64 image strings and uploads them to S3.
  * @param {Object|Array} obj - The object to sanitize
  * @param {String} userId - The ID of the user performing the action
- * @returns {Promise<Object|Array>} - The sanitized object with Cloudinary URLs
+ * @returns {Promise<Object|Array>} - The sanitized object with S3 URLs
  */
 export const sanitizeAndUpload = async (obj, userId) => {
     if (!obj || typeof obj !== 'object') return obj;
@@ -19,15 +19,16 @@ export const sanitizeAndUpload = async (obj, userId) => {
     for (const key in newObj) {
         const value = newObj[key];
         if (typeof value === 'string' && value.startsWith('data:image')) {
-            // Extract base64 and upload to Cloudinary
+            // Extract base64 and upload to S3
             try {
                 const base64Data = value.split(',')[1];
                 const buffer = Buffer.from(base64Data, 'base64');
                 const pseudoFile = {
                     buffer,
-                    originalname: `custom_photo_${Date.now()}.png`
+                    originalname: `custom_photo_${Date.now()}.png`,
+                    mimetype: 'image/png'
                 };
-                const results = await cloudinaryUpload(userId, pseudoFile, 'moodboards/custom');
+                const results = await s3Upload(userId, pseudoFile, 'moodboards/custom');
                 if (results && results.length > 0) {
                     newObj[key] = results[0].secure_url;
                     // If it's a fabric.js object with 'images' array, update that too

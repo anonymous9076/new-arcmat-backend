@@ -1,6 +1,6 @@
 import Bento from '../../models/bento.js';
 import { success, fail } from "../../middlewares/responseHandler.js";
-import { cloudinaryUpload } from "../../utils/cloudinaryupload.js";
+import { s3Upload } from "../../utils/s3upload.js";
 
 const updateBentoItem = async (req, res) => {
     try {
@@ -18,7 +18,7 @@ const updateBentoItem = async (req, res) => {
 
         if (req.files && (req.files.image || req.files.file)) {
             const files = req.files.image || req.files.file;
-            const uploadResults = await cloudinaryUpload(req.user.id, files, 'bento');
+            const uploadResults = await s3Upload(req.user.id, files, 'bento');
             if (uploadResults && uploadResults.length > 0) {
                 bentoItem.image = {
                     public_id: uploadResults[0].public_id,

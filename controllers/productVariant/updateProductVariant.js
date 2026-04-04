@@ -2,7 +2,7 @@ import variant from "../../models/productVariant.js";
 import product from "../../models/product.js";
 import slugify from "slugify"
 import { success, fail } from "../../middlewares/responseHandler.js";
-import { cloudinaryUpload, cloudinaryDelete } from "../../utils/cloudinaryupload.js";
+import { s3Upload, s3Delete } from "../../utils/s3upload.js";
 
 
 const updateproductvariant = async (req, res) => {
@@ -117,16 +117,16 @@ const updateproductvariant = async (req, res) => {
 
       const brandId = (rawBrandId?._id || rawBrandId?.id || rawBrandId).toString();
 
-      // Upload to Cloudinary
-      newImages = await cloudinaryUpload(brandId, files, 'products');
+      // Upload to S3
+      newImages = await s3Upload(brandId, files, 'products');
     }
 
     // Combine images
     data.variant_images = [...finalImages, ...newImages];
 
-    // Cleanup deleted images from Cloudinary
+    // Cleanup deleted images from S3
     if (publicIdsToDelete.length > 0) {
-      cloudinaryDelete(publicIdsToDelete).catch(err => console.error('Cloudinary cleanup error during variant update:', err));
+      s3Delete(publicIdsToDelete).catch(err => console.error('S3 cleanup error during variant update:', err));
     }
 
 

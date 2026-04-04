@@ -2,7 +2,7 @@ import Brand from "../../models/brand.js";
 import slugify from 'slugify';
 import { success, fail } from '../../middlewares/responseHandler.js';
 import mongoose from 'mongoose';
-import { cloudinaryUpload, cloudinaryDelete } from '../../utils/cloudinaryupload.js';
+import { s3Upload, s3Delete } from '../../utils/s3upload.js';
 
 
 const updatebrand = async (req, res) => {
@@ -16,13 +16,13 @@ const updatebrand = async (req, res) => {
     let logo = req.body.logo;
     if (req.files && (req.files.brand_image || req.files.logo || Object.keys(req.files).length > 0)) {
       const files = req.files.brand_image || req.files.logo || req.files;
-      const uploadResults = await cloudinaryUpload(req.user?.id || 'admin', files, 'brands');
+      const uploadResults = await s3Upload(req.user?.id || 'admin', files, 'brands');
       if (uploadResults.length > 0) {
         logo = uploadResults[0];
 
-        // Delete old logo if it was a Cloudinary object
+        // Delete old logo if it was an S3 object
         if (existingBrand.logo && existingBrand.logo.public_id) {
-          cloudinaryDelete(existingBrand.logo.public_id).catch(err => console.error('Cloudinary cleanup error during brand update:', err));
+          s3Delete(existingBrand.logo.public_id).catch(err => console.error('S3 cleanup error during brand update:', err));
         }
       }
     }

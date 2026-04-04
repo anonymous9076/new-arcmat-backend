@@ -1,6 +1,6 @@
 import banner from "../../models/banner.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryUpload, cloudinaryDelete } from '../../utils/cloudinaryupload.js';
+import { s3Upload, s3Delete } from '../../utils/s3upload.js';
 
 
 const updatebanner = async (req, res) => {
@@ -23,13 +23,13 @@ const updatebanner = async (req, res) => {
 
     if (req.files && (req.files.banner || Object.keys(req.files).length > 0)) {
       const files = req.files.banner || req.files;
-      const uploadResults = await cloudinaryUpload('admin', files, 'banners');
+      const uploadResults = await s3Upload('admin', files, 'banners');
       if (uploadResults.length > 0) {
         bannerobj.banner = uploadResults[0];
 
-        // Delete old banner if it was a Cloudinary object
+        // Delete old banner if it was an S3 object
         if (existingBanner.banner && existingBanner.banner.public_id) {
-          cloudinaryDelete(existingBanner.banner.public_id).catch(err => console.error('Cloudinary cleanup error during banner update:', err));
+          s3Delete(existingBanner.banner.public_id).catch(err => console.error('S3 cleanup error during banner update:', err));
         }
       }
     }

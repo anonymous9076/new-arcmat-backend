@@ -1,6 +1,6 @@
 import banner from "../../models/banner.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryDelete } from "../../utils/cloudinaryupload.js";
+import { s3Delete } from "../../utils/s3upload.js";
 
 const deletebanner = async (req, res) => {
   try {
@@ -9,9 +9,9 @@ const deletebanner = async (req, res) => {
       return fail(res, { message: "Banner not found" }, 404);
     }
 
-    // Cleanup banner from Cloudinary
+    // Cleanup banner from S3
     if (existingBanner.banner && existingBanner.banner.public_id) {
-      cloudinaryDelete(existingBanner.banner.public_id).catch(err => console.error('Cloudinary cleanup error during banner deletion:', err));
+      s3Delete(existingBanner.banner.public_id).catch(err => console.error('S3 cleanup error during banner deletion:', err));
     }
 
     const bannerdel = await banner.findByIdAndDelete(req.params.id);

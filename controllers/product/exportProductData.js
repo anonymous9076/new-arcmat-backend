@@ -65,15 +65,23 @@ const exportProductData = async (req, res) => {
 
             const cleanNames = [];
             imagePaths.forEach(img => {
-                // 1. Handle Cloudinary objects (New format)
+                // 1. Handle S3/Remote objects (New format)
                 if (img && typeof img === 'object' && img.secure_url) {
                     // Extract a clean name from the public_id or URL
-                    // public_id is usually "products/brandId_originalName"
+                    // public_id (Key) is usually "products/brandId_originalName_timestamp.ext"
                     let originalName = '';
                     if (img.public_id) {
                         const parts = img.public_id.split('_');
                         if (parts.length >= 2) {
-                            originalName = parts.slice(1).join('_');
+                            // Recover original name: skip prefix (products/brandId_) and timestamp/unique parts
+                            const basePart = img.public_id.split('/').pop(); // brandId_originalName_timestamp.ext
+                            const nameParts = basePart.split('_');
+                            if (nameParts.length >= 3) {
+                                // Slice off brandId (first) and timestamp/unique parts (last)
+                                originalName = nameParts.slice(1, -1).join('_');
+                            } else {
+                                originalName = basePart;
+                            }
                         } else {
                             originalName = img.public_id.split('/').pop();
                         }
@@ -193,7 +201,7 @@ const exportProductData = async (req, res) => {
         const imageList = Array.from(imagesToZip);
         const remoteImages = imageList.filter(img => img.type === 'remote');
 
-        // Process Remote (Cloudinary) Images - Parallel Download
+        // Process Remote (S3) Images - Parallel Download
         if (remoteImages.length > 0) {
             const downloadPromises = remoteImages.map(async ({ url, zipName }) => {
                 try {

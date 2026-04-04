@@ -2,7 +2,7 @@ import variant from "../../models/productVariant.js";
 import product from "../../models/product.js";
 import slugify from "slugify";
 import { success, fail } from "../../middlewares/responseHandler.js";
-import { cloudinaryUpload } from "../../utils/cloudinaryupload.js";
+import { s3Upload } from "../../utils/s3upload.js";
 
 
 const createvariant = async (req, res) => {
@@ -76,13 +76,13 @@ const createvariant = async (req, res) => {
       return 0;
     };
 
-    // Handle multiple images with Cloudinary
+    // Handle multiple images with S3
     let finalVariantImages = [];
     if (req.files) {
       const files = req.files.variant_images || req.files;
       if (files && (Array.isArray(files) || (typeof files === 'object' && Object.keys(files).length > 0))) {
-        // Use our utility to upload to Cloudinary
-        const uploadResults = await cloudinaryUpload(brandId, files, 'products');
+        // Use our utility to upload to S3
+        const uploadResults = await s3Upload(brandId, files, 'products');
         finalVariantImages = uploadResults; // Array of { public_id, secure_url }
       }
     }

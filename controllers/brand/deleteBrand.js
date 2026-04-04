@@ -1,6 +1,6 @@
 import Brand from "../../models/brand.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
-import { cloudinaryDelete } from "../../utils/cloudinaryupload.js";
+import { s3Delete } from "../../utils/s3upload.js";
 
 
 const deletebrand = async (req, res) => {
@@ -8,9 +8,9 @@ const deletebrand = async (req, res) => {
     const branddata = await Brand.findById(req.params.id);
     if (!branddata) return fail(res, new Error('brand not found'), 404);
 
-    // Cleanup logo from Cloudinary
+    // Cleanup logo from S3
     if (branddata.logo && branddata.logo.public_id) {
-      cloudinaryDelete(branddata.logo.public_id).catch(err => console.error('Cloudinary cleanup error during brand deletion:', err));
+      s3Delete(branddata.logo.public_id).catch(err => console.error('S3 cleanup error during brand deletion:', err));
     }
 
     await Brand.findByIdAndDelete(req.params.id);

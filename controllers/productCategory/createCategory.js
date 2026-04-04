@@ -1,7 +1,7 @@
 import category from "../../models/category.js";
 import slugify from "slugify";
 import { success, fail } from "../../middlewares/responseHandler.js";
-import { cloudinaryUpload } from "../../utils/cloudinaryupload.js";
+import { s3Upload } from "../../utils/s3upload.js";
 
 
 const CategoryModel = category;
@@ -66,11 +66,11 @@ const createcategory = async (req, res) => {
       }
     }
 
-    // Handle image upload with Cloudinary
+    // Handle image upload with S3
     let imageDetails = null;
     if (req.files && (req.files.category_image || Object.keys(req.files).length > 0)) {
       const files = req.files.category_image || req.files;
-      const uploadResults = await cloudinaryUpload(userid || req.user?._id || 'admin', files, 'categories');
+      const uploadResults = await s3Upload(userid || req.user?._id || 'admin', files, 'categories');
       if (uploadResults.length > 0) {
         imageDetails = uploadResults[0];
       }
