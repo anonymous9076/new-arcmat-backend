@@ -28,15 +28,25 @@ const getRetailerBrands = async (req, res) => {
 
         const brands = (retailer.selectedBrands || []).filter(b => b !== null);
 
-        const uniqueBrands = [];
-        const seenIds = new Set();
+        const uniqueBrandsMap = new Map();
         brands.forEach(brand => {
             const brandId = (brand._id || brand).toString();
-            if (!seenIds.has(brandId)) {
-                uniqueBrands.push(brand);
-                seenIds.add(brandId);
+            if (!uniqueBrandsMap.has(brandId)) {
+                uniqueBrandsMap.set(brandId, brand);
             }
         });
+
+        // Resolve productsCount for each unique brand
+        const Product = (await import('../../models/product.js')).default;
+        const uniqueBrands = [];
+        
+        for (const brand of uniqueBrandsMap.values()) {
+            const productCount = await Product.countDocuments({ brand: brand._id });
+            uniqueBrands.push({
+                ...brand,
+                productsCount: productCount
+            });
+        }
 
         return success(res, uniqueBrands, 200);
 

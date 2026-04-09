@@ -89,6 +89,12 @@ const productSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Tracks which bulk-import session created this product (for retry/cleanup)
+    importSessionId: {
+      type: String,
+      index: true,
+      default: null,
+    },
   },
   { timestamps: true }
 );

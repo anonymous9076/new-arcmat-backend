@@ -48,6 +48,12 @@ const productvariantSchema = mongoose.Schema(
       type: Array,
       default: [],
     },
+    // Tracks which bulk-import session created this variant (for retry/cleanup)
+    importSessionId: {
+      type: String,
+      index: true,
+      default: null,
+    },
   },
   { timestamps: true }
 );

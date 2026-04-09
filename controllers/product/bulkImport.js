@@ -188,6 +188,9 @@ const bulkimport = async (req, res) => {
             return fail(res, new Error('User authentication required'), 401);
         }
 
+        // Optional session ID sent by the frontend to enable retry/cleanup
+        const importSessionId = req.body.importSessionId || null;
+
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
@@ -291,7 +294,8 @@ const bulkimport = async (req, res) => {
                         weight_type: row['Weight Type'] || row['weight_type'] || 'ml',
                         status: 0,
                         variant_images: variantImages,
-                        dynamicAttributes
+                        dynamicAttributes,
+                        importSessionId,
                     };
 
                     variantsToInsert.push(variantData);
@@ -395,17 +399,13 @@ const bulkimport = async (req, res) => {
                         brandObjectId = await findOrCreateBrand(brandId, brandName, createdBy);
                     }
 
-                    const sluggedUrl = slugify(productURL, { lower: true, strict: true });
+                    // Build slug from the provided URL column; if it already exists
+                    // (e.g. two products share the same name/URL), append the SKU to
+                    // make it unique so the row is NOT skipped.
+                    let sluggedUrl = slugify(productURL, { lower: true, strict: true });
                     const urlExists = await product.findOne({ product_url: sluggedUrl });
                     if (urlExists) {
-                        results.skipped.push({
-                            row: rowNum,
-                            productName: productName,
-                            sku: baseSKU,
-                            reason: `Product URL "${sluggedUrl}" already exists`
-                        });
-                        results.failed++;
-                        continue;
+                        sluggedUrl = `${sluggedUrl}-${slugify(baseSKU, { lower: true, strict: true })}`;
                     }
 
                     const skuExistsInProducts = await product.findOne({ product_unique_id: baseSKU });
@@ -454,7 +454,8 @@ const bulkimport = async (req, res) => {
                         brand: brandObjectId,
                         createdBy,
                         product_images: productImages,
-                        dynamicAttributes: []
+                        dynamicAttributes: [],
+                        importSessionId,
                     };
 
                     productsToInsert.push(productData);

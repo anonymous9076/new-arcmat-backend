@@ -24,7 +24,7 @@ const getBrandInventory = async (req, res) => {
             .populate('brand', 'name logo')
             .skip(skip)
             .limit(parseInt(limit))
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: -1, _id: -1 })
             .lean();
 
         // Attach variants to each product and check if already in retailer's inventory
