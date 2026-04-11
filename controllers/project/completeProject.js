@@ -19,7 +19,7 @@ export const completeProject = async (req, res) => {
         }
 
         // 2. Update Project Phase and Status
-        project.phase = 'Project Completed';
+        project.phase = 'Completed';
         project.status = 'Completed';
         await project.save();
 

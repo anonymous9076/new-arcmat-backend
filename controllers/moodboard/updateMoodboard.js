@@ -4,6 +4,15 @@ import { success, fail } from "../../middlewares/responseHandler.js";
 import { s3Upload } from "../../utils/s3upload.js";
 import { sanitizeAndUpload } from "../../utils/moodboardSanitizer.js";
 
+// Valid phase values — must match the Project schema enum exactly
+const VALID_PHASES = [
+    'Concept Design',
+    'Design Development',
+    'Material Specification',
+    'Construction',
+    'Completed',
+];
+
 const updatemoodboard = async (req, res) => {
     try {
         const { id } = req.params;
@@ -73,9 +82,21 @@ const updatemoodboard = async (req, res) => {
         if (totalBudget !== undefined || phase !== undefined) {
             const projectUpdate = {};
             if (totalBudget !== undefined) projectUpdate.budget = String(totalBudget);
-            if (phase !== undefined) projectUpdate.phase = phase;
 
-            await Project.findByIdAndUpdate(updatedMoodboard.projectId, projectUpdate);
+            // Only sync phase if it is a known valid enum value.
+            // Stale canvas state may contain outdated strings (e.g. 'Project Completed')
+            // that were valid in an older version — silently drop them to avoid save failures.
+            if (phase !== undefined) {
+                if (VALID_PHASES.includes(phase)) {
+                    projectUpdate.phase = phase;
+                } else {
+                    console.warn(`[updateMoodboard] Ignored invalid phase value: '${phase}'`);
+                }
+            }
+
+            if (Object.keys(projectUpdate).length > 0) {
+                await Project.findByIdAndUpdate(updatedMoodboard.projectId, projectUpdate);
+            }
         }
 
 
