@@ -21,8 +21,9 @@ const discussionSchema = mongoose.Schema(
         },
         message: {
             type: String,
-            required: true,
+            required: false,  // Can be empty if attachments are provided
             trim: true,
+            default: '',
         },
         // Optional: link comment to a specific material (Catalog ID or Custom Photo ID)
         referencedMaterialId: {

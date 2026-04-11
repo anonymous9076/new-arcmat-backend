@@ -20,15 +20,13 @@ export const getSidebarCounts = async (req, res) => {
 
         // 1. Get Project Context
         let projectQuery = {};
-        if (isAdmin) {
-            // For admin, we don't necessarily want a global count of everything in the sidebar
-            // unless specified. Usually admins just want to see if there's anything for them.
-            // We'll stick to the logic used in Sidebar.jsx
-        } else if (isArchitect) {
+        if (isArchitect) {
             projectQuery.architectId = userId;
-        } else {
+        } else if (!isAdmin) {
+            // Clients/customers see only their assigned projects
             projectQuery['clients.userId'] = userId;
         }
+        // Admins: no filter — they see all projects
         const projects = await Project.find(projectQuery).select('_id').lean();
         const projectIds = projects.map(p => p._id);
 
