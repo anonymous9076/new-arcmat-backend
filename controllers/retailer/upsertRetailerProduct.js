@@ -62,6 +62,7 @@ const upsertRetailerProduct = async (req, res) => {
 
             const stockDiff = requestedStock - existingOverride.stock;
 
+            /*
             if (stockDiff > 0) {
                 // Increasing override stock - check if brand has enough
                 const isUnlimited = variantDoc.stock === undefined || variantDoc.stock === null;
@@ -75,6 +76,7 @@ const upsertRetailerProduct = async (req, res) => {
             if (!isUnlimitedVariant) {
                 await variant.findByIdAndUpdate(variantId, { $inc: { stock: -stockDiff } });
             }
+            */
 
             // Update override
             retailerProduct = await RetailerProduct.findByIdAndUpdate(
@@ -88,6 +90,7 @@ const upsertRetailerProduct = async (req, res) => {
             const existingOverride = await RetailerProduct.findOne({ retailerId, productId, variantId });
             const stockDiff = existingOverride ? requestedStock - existingOverride.stock : requestedStock;
 
+            /*
             // Check if brand has enough stock
             const isUnlimited = variantDoc.stock === undefined || variantDoc.stock === null;
             if (!isUnlimited && variantDoc.stock < stockDiff) {
@@ -98,6 +101,7 @@ const upsertRetailerProduct = async (req, res) => {
             if (!isUnlimited) {
                 await variant.findByIdAndUpdate(variantId, { $inc: { stock: -stockDiff } });
             }
+            */
 
             // Use findOneAndUpdate with upsert for the compound unique key
             retailerProduct = await RetailerProduct.findOneAndUpdate(
