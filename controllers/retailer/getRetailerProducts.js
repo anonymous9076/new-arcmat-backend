@@ -162,29 +162,77 @@ const getRetailerProducts = async (req, res) => {
         }
 
         // 3. Execution
-        const totalItems = await RetailerProduct.countDocuments(retailerQuery);
-        const retailerProducts = await RetailerProduct.find(retailerQuery)
-            .populate({
-                path: 'productId',
-                populate: [
-                    { path: 'brand', select: 'name logo' },
-                    { path: 'categoryId', select: 'name' },
-                    { path: 'subcategoryId', select: 'name' },
-                    { path: 'subsubcategoryId', select: 'name' }
-                ]
-            })
-            .populate('variantId')
-            .skip(skip)
-            .limit(parseInt(limit))
-            .sort({ createdAt: -1 })
-            .lean();
-
-        // 4. Metadata Calculation (Storefront only)
-        let metadata = {};
         if (type === 'storefront') {
+            // ── STOREFRONT: Product-centric grouping ──
+            // Fetch ALL matching retailer products (we paginate AFTER grouping by product)
+            const allRetailerProducts = await RetailerProduct.find(retailerQuery)
+                .populate({
+                    path: 'productId',
+                    populate: [
+                        { path: 'brand', select: 'name logo' },
+                        { path: 'categoryId', select: 'name' },
+                        { path: 'subcategoryId', select: 'name' },
+                        { path: 'subsubcategoryId', select: 'name' }
+                    ]
+                })
+                .populate('variantId')
+                .sort({ createdAt: -1 })
+                .lean();
+
+            // Group by productId → product-centric map
+            const productMap = new Map();
+            allRetailerProducts.forEach(rp => {
+                if (!rp.productId || !rp.variantId) return;
+                const pid = rp.productId._id.toString();
+
+                if (!productMap.has(pid)) {
+                    productMap.set(pid, {
+                        ...rp.productId,
+                        variants: [],
+                        _prices: []
+                    });
+                }
+
+                const entry = productMap.get(pid);
+                entry.variants.push({
+                    ...rp.variantId,
+                    selling_price: rp.selling_price,
+                    mrp_price: rp.mrp_price,
+                    stock: rp.stock,
+                    retailer_id: rp.retailerId,
+                    retailerId: rp.retailerId,
+                    override_id: rp._id,
+                    isRetailerManaged: true
+                });
+                if (rp.selling_price !== undefined) entry._prices.push(rp.selling_price);
+            });
+
+            // Convert map to array and derive pricing
+            const groupedProducts = Array.from(productMap.values()).map(p => {
+                const minPrice = p._prices.length > 0 ? Math.min(...p._prices) : 0;
+                const maxPrice = p._prices.length > 0 ? Math.max(...p._prices) : 0;
+                const totalStock = p.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+                const minPriceVariant = p.variants.find(v => v.selling_price === minPrice) || p.variants[0];
+
+                delete p._prices;
+                return {
+                    ...p,
+                    minPrice,
+                    maxPrice,
+                    totalStock,
+                    selling_price: minPrice,
+                    mrp_price: minPriceVariant?.mrp_price || 0
+                };
+            });
+
+            // Pagination on grouped products
+            const totalItems = groupedProducts.length;
+            const paginatedProducts = groupedProducts.slice(skip, skip + parseInt(limit));
+
+            // Metadata (sidebar filters)
             const metadataQuery = { ...retailerQuery };
             delete metadataQuery.selling_price;
-            delete metadataQuery.variantId; // Get all colors/attributes for the base product query
+            delete metadataQuery.variantId;
 
             const allOverrides = await RetailerProduct.find(metadataQuery)
                 .select('selling_price variantId')
@@ -193,8 +241,7 @@ const getRetailerProducts = async (req, res) => {
 
             const prices = allOverrides.map(o => o.selling_price).filter(p => p !== undefined);
             const colors = allOverrides.map(o => o.variantId?.color).filter(Boolean);
-            
-            // Extract unique dynamic attributes
+
             const dynamicAttrMap = {};
             allOverrides.forEach(o => {
                 if (o.variantId?.dynamicAttributes) {
@@ -212,53 +259,66 @@ const getRetailerProducts = async (req, res) => {
                 values: Array.from(valueSet).sort()
             }));
 
-            metadata = {
+            const metadata = {
                 minPrice: prices.length > 0 ? Math.min(...prices) : 0,
                 maxPrice: prices.length > 0 ? Math.max(...prices) : 0,
                 availableColors: Array.from(new Set(colors)).sort(),
                 availableAttributes
             };
+
+            return success(res, {
+                status: "success",
+                data: paginatedProducts,
+                pagination: {
+                    totalItems,
+                    totalPages: Math.ceil(totalItems / parseInt(limit)),
+                    currentPage: parseInt(page),
+                    limit: parseInt(limit)
+                },
+                metadata
+            }, 200);
         }
 
-        // 5. Transformation
-        const data = retailerProducts.map(rp => {
-            if (type === 'storefront') {
-                // Flatten variant structure for ProductCard compatibility
-                return {
-                    ...rp.variantId,
-                    productId: rp.productId,
-                    selling_price: rp.selling_price, // Retailer override
-                    mrp_price: rp.mrp_price,         // Retailer override
-                    stock: rp.stock,                 // Retailer override
-                    retailer_id: rp.retailerId,
-                    override_id: rp._id
-                };
-            }
-            // Dashboard structure
-            return {
-                _id: rp._id,
-                mrp_price: rp.mrp_price,
-                selling_price: rp.selling_price,
-                stock: rp.stock,
-                isActive: rp.isActive,
-                retailerId: rp.retailerId,
-                product: rp.productId,
-                variant: rp.variantId,
-                createdAt: rp.createdAt,
-                updatedAt: rp.updatedAt
-            };
-        });
+        // ── DASHBOARD: Original variant-centric listing (unchanged) ──
+        const totalItems = await RetailerProduct.countDocuments(retailerQuery);
+        const retailerProducts = await RetailerProduct.find(retailerQuery)
+            .populate({
+                path: 'productId',
+                populate: [
+                    { path: 'brand', select: 'name logo' },
+                    { path: 'categoryId', select: 'name' },
+                    { path: 'subcategoryId', select: 'name' },
+                    { path: 'subsubcategoryId', select: 'name' }
+                ]
+            })
+            .populate('variantId')
+            .skip(skip)
+            .limit(parseInt(limit))
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const data = retailerProducts.map(rp => ({
+            _id: rp._id,
+            mrp_price: rp.mrp_price,
+            selling_price: rp.selling_price,
+            stock: rp.stock,
+            isActive: rp.isActive,
+            retailerId: rp.retailerId,
+            product: rp.productId,
+            variant: rp.variantId,
+            createdAt: rp.createdAt,
+            updatedAt: rp.updatedAt
+        }));
 
         return success(res, {
             status: "success",
             data,
             pagination: {
                 totalItems,
-                totalPages: Math.ceil(totalItems / limit),
+                totalPages: Math.ceil(totalItems / parseInt(limit)),
                 currentPage: parseInt(page),
                 limit: parseInt(limit)
-            },
-            metadata
+            }
         }, 200);
 
     } catch (error) {
