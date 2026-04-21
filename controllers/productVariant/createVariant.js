@@ -3,6 +3,7 @@ import product from "../../models/product.js";
 import slugify from "slugify";
 import { success, fail } from "../../middlewares/responseHandler.js";
 import { s3Upload } from "../../utils/s3upload.js";
+import { syncAttributes } from "../../utils/syncAttributes.js";
 
 
 const createvariant = async (req, res) => {
@@ -102,6 +103,12 @@ const createvariant = async (req, res) => {
     });
 
     const response = await insertvariant.save();
+    
+    // Auto-sync dynamic attributes to Attributes collection
+    if (insertvariant.dynamicAttributes && insertvariant.dynamicAttributes.length > 0) {
+      await syncAttributes(insertvariant.dynamicAttributes);
+    }
+    
     return success(res, response, 201);
   } catch (err) {
     console.error("createvariant error:", err);

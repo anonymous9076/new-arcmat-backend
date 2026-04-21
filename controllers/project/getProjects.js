@@ -40,7 +40,17 @@ const getUnreadCounts = async (projectId, userId, isAdmin, isArchitect) => {
  */
 const getMoodboardsWithCounts = async (projectId, userId, isClient) => {
     const moodboards = await Moodboard.find({ projectId })
-        .populate("estimatedCostId")
+        .populate({
+            path: "estimatedCostId",
+            populate: {
+                path: "productIds",
+                model: "RetailerProduct",
+                populate: {
+                    path: "productId",
+                    model: "Product"
+                }
+            }
+        })
         .sort({ createdAt: -1 })
         .lean();
 
