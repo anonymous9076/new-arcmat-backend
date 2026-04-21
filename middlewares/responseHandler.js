@@ -13,5 +13,11 @@ export function fail(res, error = {}, statusCode = 500) {
     statusCode = 409; // Conflict
   }
 
+  // Hide internal server errors from frontend
+  if (statusCode >= 500) {
+    console.error("Internal Server Error:", error);
+    message = "Something went wrong, please try again later.";
+  }
+
   return res.status(statusCode).json({ status: "failed", message });
 }

@@ -14,7 +14,7 @@ router.get("/", attributelist);
 router.patch('/:id', authenticateToken(['admin']), upload.none(), updateattribute)
 router.get('/:id', attribute_single)
 router.get('/listbycategoryid/:id', attribute_listing_by_categoryid)
-router.post("/", authenticateToken(['admin']), upload.none(), createattribute);
+router.post("/", authenticateToken(['admin', 'brand']), upload.none(), createattribute);
 router.delete("/:id", authenticateToken(['admin']), deleteattribute);
 
 export default router;

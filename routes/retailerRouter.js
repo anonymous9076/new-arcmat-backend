@@ -9,6 +9,7 @@ import getBrandInventory from '../controllers/retailer/getBrandInventory.js';
 import bulkAddInventory from '../controllers/retailer/bulkAddInventory.js';
 import deleteRetailerProduct from '../controllers/retailer/deleteRetailerProduct.js';
 import getRetailerProductDetail from '../controllers/retailer/getRetailerProductDetail.js';
+import bulkRemoveInventory from '../controllers/retailer/bulkRemoveInventory.js';
 import checkuser from '../middlewares/checkUser.js';
 import multer from 'multer';
 
@@ -27,6 +28,7 @@ router.get('/brands/:brandId/inventory', requireRetailerRole, getBrandInventory)
 router.patch('/brands', requireRetailerRole, updateRetailerBrands);
 router.post('/products', upload.none(), requireRetailerRole, upsertRetailerProduct);
 router.post('/inventory/bulk-add', requireRetailerRole, bulkAddInventory);
+router.post('/inventory/bulk-remove', requireRetailerRole, bulkRemoveInventory);
 router.patch('/products/:id', upload.none(), requireRetailerRole, upsertRetailerProduct);
 router.delete('/products/:id', requireRetailerRole, deleteRetailerProduct);
 

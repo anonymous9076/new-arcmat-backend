@@ -139,12 +139,17 @@ const getRetailerProducts = async (req, res) => {
         if (Object.keys(attributeFilters).length > 0) {
             const Variant = (await import('../../models/productVariant.js')).default;
             
+            // Escape special regex characters to prevent injection
+            const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
             // Build $and query for multiple attributes
+            // Use case-insensitive regex because the frontend normalizes keys to lowercase
+            // but the DB stores them with original casing (e.g., "Color" vs "color")
             const attrMatchQueries = Object.entries(attributeFilters).map(([key, values]) => ({
                 dynamicAttributes: {
                     $elemMatch: {
-                        key: key,
-                        value: { $in: values }
+                        key: { $regex: new RegExp(`^${escapeRegex(key.trim())}$`, 'i') },
+                        value: { $in: values.map(v => new RegExp(`^${escapeRegex(v.trim())}$`, 'i')) }
                     }
                 }
             }));

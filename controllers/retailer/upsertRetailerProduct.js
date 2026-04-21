@@ -25,11 +25,6 @@ const upsertRetailerProduct = async (req, res) => {
             return fail(res, new Error('Missing required fields: productId, variantId, mrp_price, selling_price'), 400);
         }
 
-        // if stock is empty then do nothing
-        if (stock === undefined || stock === null || stock === '') {
-            return success(res, { message: 'No changes made (stock is empty)' }, 200);
-        }
-
         // 2. Check Product existence and authorized brand
         const productDoc = await Product.findById(productId).lean();
         if (!productDoc) {
@@ -50,7 +45,7 @@ const upsertRetailerProduct = async (req, res) => {
 
         // 4. Upsert/Update Logic with Stock Management
         let retailerProduct;
-        const requestedStock = Number(stock);
+        const requestedStock = (stock === undefined || stock === null || stock === '') ? null : Number(stock);
 
         if (id) {
             // Updating an existing override

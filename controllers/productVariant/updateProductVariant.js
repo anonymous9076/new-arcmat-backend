@@ -3,6 +3,7 @@ import product from "../../models/product.js";
 import slugify from "slugify"
 import { success, fail } from "../../middlewares/responseHandler.js";
 import { s3Upload, s3Delete } from "../../utils/s3upload.js";
+import { syncAttributes } from "../../utils/syncAttributes.js";
 
 
 const updateproductvariant = async (req, res) => {
@@ -135,6 +136,12 @@ const updateproductvariant = async (req, res) => {
     if (!updatedVariant) {
       return fail(res, new Error("Variant not found"), 404);
     }
+    
+    // Auto-sync dynamic attributes to Attributes collection
+    if (updatedVariant.dynamicAttributes && updatedVariant.dynamicAttributes.length > 0) {
+      await syncAttributes(updatedVariant.dynamicAttributes);
+    }
+    
     return success(res, updatedVariant, 200);
 
   } catch (err) {

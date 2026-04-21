@@ -65,37 +65,44 @@ const bulkAddInventory = async (req, res) => {
             return fail(res, new Error("No variants available or all were excluded"), 400);
         }
 
-        let addedCount = 0;
-        let skippedCount = 0;
+        // Filter out any variants missing critical IDs
+        const validVariants = targetVariants.filter(item => item.productId && item.variantId);
 
-        for (const item of targetVariants) {
-            try {
-                const { productId, variantId, mrp_price, selling_price } = item;
-                if (!productId || !variantId) {
-                    skippedCount++;
-                    continue;
-                }
-
-                const newRetailerProduct = new RetailerProduct({
-                    retailerId,
-                    productId,
-                    variantId,
-                    mrp_price,
-                    selling_price,
-                    stock: null, // Allow no stock by default
-                    isActive: true
-                });
-
-                await newRetailerProduct.save();
-                addedCount++;
-            } catch (err) {
-                console.error(`Failed to bulk add item productId: ${item.productId}, variantId: ${item.variantId}`, err);
-                skippedCount++;
-            }
+        if (validVariants.length === 0) {
+            return fail(res, new Error("No valid variants to add"), 400);
         }
 
+        // Use bulkWrite with upsert to prevent E11000 duplicate key errors
+        // If the record already exists, it will do nothing (or just ensure it's active)
+        const bulkOps = validVariants.map(item => ({
+            updateOne: {
+                filter: { 
+                    retailerId: retailerId, 
+                    productId: item.productId, 
+                    variantId: item.variantId 
+                },
+                update: {
+                    $setOnInsert: {
+                        retailerId,
+                        productId: item.productId,
+                        variantId: item.variantId,
+                        mrp_price: item.mrp_price,
+                        selling_price: item.selling_price,
+                        stock: null, // Allow no stock by default
+                        isActive: true
+                    }
+                },
+                upsert: true
+            }
+        }));
+
+        const result = await RetailerProduct.bulkWrite(bulkOps, { ordered: false });
+
+        const addedCount = result.upsertedCount || 0;
+        const skippedCount = targetVariants.length - addedCount;
+
         return success(res, {
-            message: `Successfully added ${addedCount} products to inventory. Skipped ${skippedCount}.`,
+            message: `Successfully added ${addedCount} products to inventory. Skipped ${skippedCount} (already existing).`,
             addedCount,
             skippedCount
         }, 200);
