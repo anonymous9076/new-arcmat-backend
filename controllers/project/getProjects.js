@@ -2,6 +2,7 @@ import Project from "../../models/project.js";
 import Moodboard from "../../models/moodboard.js";
 import Discussion from "../../models/discussion.js";
 import MaterialHistory from "../../models/materialHistory.js";
+import mongoose from "mongoose";
 import { success, fail } from '../../middlewares/responseHandler.js';
 
 /**
@@ -70,7 +71,10 @@ const getMoodboardsWithCounts = async (projectId, userId, isClient) => {
 const getProjects = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user.id;
+        const rawUserId = req.user.id || req.user._id;
+        const userId = mongoose.isValidObjectId(rawUserId)
+            ? new mongoose.Types.ObjectId(rawUserId)
+            : rawUserId;
         const role = req.user.role;
         const isAdmin = role === 'admin';
         const isArchitect = role === 'architect';

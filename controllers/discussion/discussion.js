@@ -11,15 +11,13 @@ export const postComment = async (req, res) => {
         const { projectId: rawProjectId } = req.params;
         const projectId = mongoose.Types.ObjectId.isValid(rawProjectId) ? rawProjectId : null;
 
-        const { message, referencedMaterialId, referencedMaterialName, type, materialHistoryId, spaceId, retailerId } = req.body;
+        const { message, referencedMaterialId, referencedMaterialName, referencedMaterialImage, type, materialHistoryId, spaceId, retailerId } = req.body;
         const authorId = req.user.id;
 
         let uploadedAttachments = [];
         if (req.files && req.files.length > 0) {
             try {
                 const folder = `discussions/${projectId}`;
-                // BUG FIX 1: Renamed map callback param from `res` to `result`
-                // to avoid shadowing the Express `res` object
                 const uploadResults = await s3Upload(authorId, req.files, folder);
                 uploadedAttachments = uploadResults.map(result => result.secure_url);
             } catch (uploadErr) {
@@ -39,6 +37,7 @@ export const postComment = async (req, res) => {
             message: message?.trim() || "",
             referencedMaterialId: referencedMaterialId || null,
             referencedMaterialName: referencedMaterialName || null,
+            referencedMaterialImage: referencedMaterialImage || null,
             type: type || 'comment',
             materialHistoryId: materialHistoryId || null,
             retailerId: retailerId || null,

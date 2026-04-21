@@ -35,6 +35,10 @@ const discussionSchema = mongoose.Schema(
             trim: true,
             default: null,
         },
+        referencedMaterialImage: {
+            type: String,
+            default: null,
+        },
         // For material approval comments - "approve" | "comment" | "reject"
         type: {
             type: String,

@@ -26,17 +26,16 @@ export const markNotificationsRead = async (req, res) => {
             await MaterialHistory.updateMany(materialHistoryQuery, { $addToSet: { readBy: userId } });
 
         } else if (type === 'general') {
-            const discussionQuery = { projectId, retailerId: null, readBy: { $ne: userId } };
-            const historyQuery = { projectId, materialId: null, readBy: { $ne: userId } };
-
-            if (spaceId) {
-                discussionQuery.spaceId = spaceId;
-                historyQuery.spaceId = spaceId;
-            } else {
-                // When marking "general" read without a spaceId, we clear ALL project-level 
-                // and space-level messages to ensure the main ProjectCard badge is cleared.
-                // We don't set spaceId: null here to allow the query to match all spaceIds.
-            }
+            // NUCLEAR SWEEP: Mark EVERYTHING in this project as read for this user.
+            // This ensures no 'ghost' notifications remain in any room or thread.
+            const discussionQuery = { 
+                projectId, 
+                readBy: { $ne: userId } 
+            };
+            const historyQuery = { 
+                projectId, 
+                readBy: { $ne: userId } 
+            };
 
             await Discussion.updateMany(discussionQuery, { $addToSet: { readBy: userId } });
             await MaterialHistory.updateMany(historyQuery, { $addToSet: { readBy: userId } });
