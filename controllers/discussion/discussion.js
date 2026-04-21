@@ -1,7 +1,132 @@
 import Discussion from "../../models/discussion.js";
+import Project from "../../models/project.js";
+import RetailerRequest from "../../models/retailerRequest.js";
+import SampleRequest from "../../models/sampleRequest.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
 import { s3Upload } from "../../utils/s3upload.js";
 import mongoose from 'mongoose';
+
+const isSameId = (left, right) => Boolean(left && right && left.toString() === right.toString());
+
+const isAcceptedClient = (project, user) => Boolean(
+    project?.clients?.some((client) =>
+        client.status === 'Accepted' && (
+            (client.userId && isSameId(client.userId, user.id)) ||
+            (client.email && client.email.toLowerCase() === user.email?.toLowerCase())
+        )
+    )
+);
+
+const hasDirectRetailerThreadAccess = async ({ projectId = null, retailerId, materialId, user }) => {
+    if (!retailerId || !materialId) {
+        return false;
+    }
+
+    if (user.role === 'customer') {
+        return false;
+    }
+
+    if (user.role === 'retailer' && retailerId.toString() !== user.id.toString()) {
+        return false;
+    }
+
+    const retailerRequestQuery = {
+        materialId,
+        projectId: projectId || null,
+    };
+    const sampleRequestQuery = {
+        productId: materialId,
+        projectId: projectId || null,
+    };
+
+    if (user.role === 'architect') {
+        retailerRequestQuery.professionalId = user.id;
+        retailerRequestQuery.retailerId = retailerId;
+        sampleRequestQuery.professionalId = user.id;
+        sampleRequestQuery.retailerId = retailerId;
+    } else if (user.role === 'retailer') {
+        retailerRequestQuery.retailerId = user.id;
+        sampleRequestQuery.retailerId = user.id;
+    } else if (user.role === 'admin') {
+        retailerRequestQuery.retailerId = retailerId;
+        sampleRequestQuery.retailerId = retailerId;
+    }
+
+    const [retailerRequest, sampleRequest] = await Promise.all([
+        RetailerRequest.findOne(retailerRequestQuery).lean(),
+        SampleRequest.findOne(sampleRequestQuery).lean(),
+    ]);
+
+    return Boolean(retailerRequest || sampleRequest);
+};
+
+const validateDiscussionAccess = async ({ projectId, retailerId, materialId, user, requireDirectContext = false }) => {
+    if (!projectId) {
+        if (!retailerId || !materialId) {
+            return {
+                allowed: false,
+                statusCode: requireDirectContext ? 400 : 403,
+                message: requireDirectContext
+                    ? "Retailer and material context are required for direct discussions"
+                    : "Unauthorized",
+            };
+        }
+
+        const hasAccess = await hasDirectRetailerThreadAccess({
+            projectId: null,
+            retailerId,
+            materialId,
+            user,
+        });
+
+        return hasAccess
+            ? { allowed: true }
+            : { allowed: false, statusCode: 403, message: "Unauthorized" };
+    }
+
+    const project = await Project.findById(projectId).select("architectId clients retailers projectName").lean();
+    if (!project) {
+        return { allowed: false, statusCode: 404, message: "Project not found" };
+    }
+
+    if (user.role === 'admin') {
+        return { allowed: true, project };
+    }
+
+    if (user.role === 'architect') {
+        return isSameId(project.architectId, user.id)
+            ? { allowed: true, project }
+            : { allowed: false, statusCode: 403, message: "Unauthorized" };
+    }
+
+    if (user.role === 'customer') {
+        return isAcceptedClient(project, user)
+            ? { allowed: true, project }
+            : { allowed: false, statusCode: 403, message: "Unauthorized" };
+    }
+
+    if (user.role === 'retailer') {
+        const isLinkedRetailer = Array.isArray(project.retailers) && project.retailers.some((retailer) => isSameId(retailer, user.id));
+        if (isLinkedRetailer) {
+            return { allowed: true, project };
+        }
+
+        if (retailerId && materialId) {
+            const hasAccess = await hasDirectRetailerThreadAccess({
+                projectId,
+                retailerId,
+                materialId,
+                user,
+            });
+
+            if (hasAccess) {
+                return { allowed: true, project };
+            }
+        }
+    }
+
+    return { allowed: false, statusCode: 403, message: "Unauthorized" };
+};
 
 /**
  * Post a comment / message in a project discussion
@@ -10,16 +135,36 @@ export const postComment = async (req, res) => {
     try {
         const { projectId: rawProjectId } = req.params;
         const projectId = mongoose.Types.ObjectId.isValid(rawProjectId) ? rawProjectId : null;
-
-        const { message, referencedMaterialId, referencedMaterialName, referencedMaterialImage, type, materialHistoryId, spaceId, retailerId } = req.body;
+        const {
+            message,
+            referencedMaterialId,
+            referencedMaterialName,
+            referencedMaterialImage,
+            type,
+            materialHistoryId,
+            spaceId,
+            retailerId,
+        } = req.body;
         const authorId = req.user.id;
+
+        const access = await validateDiscussionAccess({
+            projectId,
+            retailerId: retailerId || null,
+            materialId: referencedMaterialId || null,
+            user: req.user,
+            requireDirectContext: !projectId,
+        });
+
+        if (!access.allowed) {
+            return fail(res, new Error(access.message), access.statusCode);
+        }
 
         let uploadedAttachments = [];
         if (req.files && req.files.length > 0) {
             try {
                 const folder = `discussions/${projectId}`;
                 const uploadResults = await s3Upload(authorId, req.files, folder);
-                uploadedAttachments = uploadResults.map(result => result.secure_url);
+                uploadedAttachments = uploadResults.map((result) => result.secure_url);
             } catch (uploadErr) {
                 console.error("S3 upload failed for discussion:", uploadErr);
                 return fail(res, new Error("Failed to upload attachments"), 500);
@@ -45,7 +190,7 @@ export const postComment = async (req, res) => {
             isInternal: (req.user.role === 'architect' || req.user.role === 'admin' || req.user.role === 'retailer')
                 ? (req.user.role === 'retailer' ? true : !!req.body.isInternal)
                 : false,
-            readBy: [authorId], // Mark as read by the person who created it
+            readBy: [authorId],
         });
 
         await comment.save();
@@ -53,49 +198,44 @@ export const postComment = async (req, res) => {
 
         try {
             const Notification = (await import("../../models/notification.js")).default;
-            const Project = (await import("../../models/project.js")).default;
-            const RetailerRequest = (await import("../../models/retailerRequest.js")).default;
 
             let recipient = null;
             let notificationMessage = "";
 
             if (req.user.role === 'retailer') {
-                // Retailer sends message → notify architect/professional
-                // Try to find the architect from the project first
                 if (projectId) {
-                    const project = await Project.findById(projectId).select('architectId projectName').lean();
+                    const project = access.project || await Project.findById(projectId).select('architectId projectName').lean();
                     if (project) {
                         recipient = project.architectId;
                         notificationMessage = `New message from retailer regarding project ${project.projectName}`;
                     }
                 }
 
-                // Fallback: search RetailerRequest for professionalId
                 if (!recipient && (retailerId || authorId) && referencedMaterialId) {
-                    const rr = await RetailerRequest.findOne({
+                    const retailerRequest = await RetailerRequest.findOne({
                         retailerId: retailerId || authorId,
                         materialId: referencedMaterialId
                     }).lean();
-                    recipient = rr?.professionalId;
-                    if (!notificationMessage) notificationMessage = `New message from retailer regarding ${referencedMaterialName || 'a material'}`;
+                    recipient = retailerRequest?.professionalId;
+                    if (!notificationMessage) {
+                        notificationMessage = `New message from retailer regarding ${referencedMaterialName || 'a material'}`;
+                    }
                 }
             } else if (req.user.role === 'architect' || req.user.role === 'admin') {
-                // Architect/Admin sends message → notify retailer
                 if (retailerId) {
                     recipient = retailerId;
                 } else {
-                    // Search for the retailer assigned to this request
-                    const query = { materialId: referencedMaterialId };
-                    if (projectId) query.projectId = projectId;
-                    else query.retailerId = { $ne: null }; // If no project, we need a retailer-assigned request
+                    const requestQuery = { materialId: referencedMaterialId };
+                    if (projectId) requestQuery.projectId = projectId;
+                    else requestQuery.retailerId = { $ne: null };
 
-                    const rr = await RetailerRequest.findOne(query).lean();
-                    recipient = rr?.retailerId;
+                    const retailerRequest = await RetailerRequest.findOne(requestQuery).lean();
+                    recipient = retailerRequest?.retailerId;
                 }
 
                 let projectNameStr = "a project";
                 if (projectId) {
-                    const project = await Project.findById(projectId).select('projectName').lean();
+                    const project = access.project || await Project.findById(projectId).select('projectName').lean();
                     if (project) projectNameStr = project.projectName;
                 }
                 notificationMessage = `Architect sent a message for ${projectNameStr}`;
@@ -110,7 +250,8 @@ export const postComment = async (req, res) => {
                     relatedData: {
                         projectId,
                         productId: referencedMaterialId && mongoose.isValidObjectId(referencedMaterialId)
-                            ? referencedMaterialId : null
+                            ? referencedMaterialId
+                            : null
                     }
                 }).save();
             }
@@ -135,18 +276,26 @@ export const getComments = async (req, res) => {
 
         let query = {};
 
-        // Handle invalid or "null" projectId
         if (mongoose.Types.ObjectId.isValid(rawProjectId)) {
             query.projectId = rawProjectId;
         } else {
-            // If project context is missing, we MUST have at least retailerId and materialId
-            // to provide a reliable context for the conversation.
             if (!retailerId || !materialId) {
                 return success(res, [], 200);
             }
             query.retailerId = retailerId;
             query.referencedMaterialId = materialId;
-            query.projectId = null; // Look for explicitly project-less chats
+            query.projectId = null;
+        }
+
+        const access = await validateDiscussionAccess({
+            projectId: query.projectId || null,
+            retailerId: retailerId || null,
+            materialId: materialId || null,
+            user: req.user,
+        });
+
+        if (!access.allowed) {
+            return fail(res, new Error(access.message), access.statusCode);
         }
 
         if (spaceId) query.spaceId = spaceId;
@@ -157,9 +306,6 @@ export const getComments = async (req, res) => {
             query.isInternal = { $ne: true };
         }
 
-        // BUG FIX 3: Check explicit `retailerId` query param FIRST before
-        // falling into role-based defaults, preventing the retailer-role
-        // branch from overwriting a deliberately passed retailerId
         if (retailerId) {
             query.retailerId = retailerId;
             if (materialId) query.referencedMaterialId = materialId;
@@ -205,8 +351,21 @@ export const deleteComment = async (req, res) => {
         }
 
         const isAuthor = comment.authorId.toString() === userId;
-        // BUG FIX 4: Added `admin` to privileged roles allowed to delete any comment
-        const isPrivileged = role === 'architect' || role === 'admin';
+        let isPrivileged = role === 'admin';
+
+        if (!isAuthor && role === 'architect') {
+            if (comment.projectId) {
+                const project = await Project.findById(comment.projectId).select("architectId").lean();
+                isPrivileged = isSameId(project?.architectId, userId);
+            } else {
+                isPrivileged = await hasDirectRetailerThreadAccess({
+                    projectId: null,
+                    retailerId: comment.retailerId,
+                    materialId: comment.referencedMaterialId,
+                    user: req.user,
+                });
+            }
+        }
 
         if (!isAuthor && !isPrivileged) {
             return fail(res, new Error("Unauthorized"), 403);

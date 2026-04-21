@@ -13,9 +13,34 @@ const projectTemplateSchema = mongoose.Schema(
             required: true,
             trim: true,
         },
+        location: {
+            city: { type: String, trim: true },
+            country: { type: String, trim: true },
+            address: { type: String, trim: true },
+        },
+        estimatedDuration: {
+            month: { type: Number },
+            year: { type: Number },
+        },
+        budget: {
+            type: String,
+            trim: true,
+        },
         type: {
             type: String,
             trim: true,
+        },
+        phase: {
+            type: String,
+            trim: true,
+            enum: [
+                'Concept Design',
+                'Design Development',
+                'Material Specification',
+                'Construction',
+                'Completed'
+            ],
+            default: 'Concept Design'
         },
         size: {
             type: String,

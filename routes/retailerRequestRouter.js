@@ -13,7 +13,7 @@ import authenticateToken from "../middlewares/verifyToken.js";
 const router = express.Router();
 
 // Architect gets all their retailer requests across projects
-router.get("/mine", authenticateToken(['architect']), getMyRetailerRequests);
+router.get("/mine", authenticateToken(['architect', 'professional']), getMyRetailerRequests);
 
 // Admin gets ALL retailer requests
 router.get("/all", authenticateToken(['admin']), getAllRetailerRequests);
@@ -22,10 +22,10 @@ router.get("/all", authenticateToken(['admin']), getAllRetailerRequests);
 router.get("/assigned", authenticateToken(['retailer']), getRetailerAssignedRequests);
 
 // Architect creates a retailer contact request
-router.post("/:projectId", authenticateToken(['architect']), createRetailerRequest);
+router.post("/:projectId", authenticateToken(['architect', 'professional']), createRetailerRequest);
 
 // Get all retailer requests for a project
-router.get("/:projectId", authenticateToken(['architect', 'admin']), getProjectRetailerRequests);
+router.get("/:projectId", authenticateToken(['architect', 'professional', 'admin']), getProjectRetailerRequests);
 
 // Admin/Arcmat updates a request (confirm, share details)
 router.patch("/:requestId", authenticateToken(['admin']), updateRetailerRequest);

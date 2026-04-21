@@ -15,10 +15,10 @@ const router = express.Router();
 
 router.post("/", authenticateToken(['architect']), createmoodboard);
 router.post("/duplicate/:id", authenticateToken(['architect']), validateObjectId, duplicatemoodboard);
-router.get("/list/all", authenticateToken(["customer", "architect", "retailer", "admin", "brand"]), getallarchitectboards);
-router.get("/project/:projectId", authenticateToken(["customer", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardbyproject);
-router.get("/list/:projectId", authenticateToken(["customer", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardlist);
-router.get("/id/:id", authenticateToken(["customer", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardbyid);
+router.get("/list/all", authenticateToken(["customer", "professional", "architect", "retailer", "admin", "brand"]), getallarchitectboards);
+router.get("/project/:projectId", authenticateToken(["customer", "professional", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardbyproject);
+router.get("/list/:projectId", authenticateToken(["customer", "professional", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardlist);
+router.get("/id/:id", authenticateToken(["customer", "professional", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardbyid);
 router.patch("/:id", authenticateToken(['architect']), validateObjectId, upload.fields([{ name: 'coverImage', maxCount: 1 }]), updatemoodboard);
 router.delete("/:id", authenticateToken(['architect']), validateObjectId, deletemoodboard);
 

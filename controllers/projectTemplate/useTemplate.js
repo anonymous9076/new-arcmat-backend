@@ -6,28 +6,75 @@ import MoodboardTemplate from "../../models/moodboardTemplate.js";
 import EstimatedCostTemplate from "../../models/estimatedCostTemplate.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
 
+const hasNonEmptyString = (value) => typeof value === "string" && value.trim() !== "";
+
+const resolveLocation = (incomingLocation, templateLocation) => {
+    const hasIncomingLocation = incomingLocation && typeof incomingLocation === "object" && [
+        incomingLocation.address,
+        incomingLocation.city,
+    ].some(hasNonEmptyString);
+
+    return hasIncomingLocation
+        ? { ...(templateLocation || {}), ...incomingLocation }
+        : templateLocation;
+};
+
+const resolveEstimatedDuration = (incomingDuration, templateDuration) => {
+    const hasIncomingDuration = incomingDuration && typeof incomingDuration === "object" && (
+        (incomingDuration.month !== undefined && incomingDuration.month !== "") ||
+        (incomingDuration.year !== undefined && incomingDuration.year !== "")
+    );
+
+    return hasIncomingDuration
+        ? { ...(templateDuration || {}), ...incomingDuration }
+        : templateDuration;
+};
+
 const useTemplate = async (req, res) => {
     try {
         const { templateId } = req.params;
         const userId = req.user.id;
-        const { projectName, clientName } = req.body;
+        const role = req.user.role;
+        const {
+            projectName,
+            clientName,
+            location,
+            type,
+            phase,
+            size,
+            budget,
+            estimatedDuration,
+            description,
+        } = req.body;
 
         const template = await ProjectTemplate.findById(templateId);
         if (!template) {
             return fail(res, new Error("Template not found"), 404);
         }
 
+        const isOwner = template.creatorId && template.creatorId.toString() === userId.toString();
+        if (role !== "admin" && !isOwner) {
+            return fail(res, new Error("Unauthorized to use this template"), 403);
+        }
+
+        const normalizedProjectName = hasNonEmptyString(projectName)
+            ? projectName.trim().replace(/\s+/g, " ")
+            : `${template.templateName} Copy`;
+
         // 1. Create new Project from template
         const projectData = {
             architectId: userId,
-            projectName: projectName || `${template.templateName} Copy`,
-            clientName: clientName || '',
-            type: template.type,
-            size: template.size,
-            description: template.description,
+            projectName: normalizedProjectName,
+            clientName: hasNonEmptyString(clientName) ? clientName.trim() : '',
+            location: resolveLocation(location, template.location),
+            type: hasNonEmptyString(type) ? type.trim() : template.type,
+            phase: hasNonEmptyString(phase) ? phase.trim() : (template.phase || 'Concept Design'),
+            size: hasNonEmptyString(size) ? size.trim() : template.size,
+            budget: hasNonEmptyString(budget) ? budget.trim() : template.budget,
+            estimatedDuration: resolveEstimatedDuration(estimatedDuration, template.estimatedDuration),
+            description: hasNonEmptyString(description) ? description.trim() : template.description,
             coverImage: template.coverImage,
             status: 'Active',
-            phase: 'Concept Design'
         };
         const newProject = await Project.create(projectData);
 

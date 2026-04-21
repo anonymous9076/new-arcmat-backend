@@ -12,7 +12,7 @@ const getmoodboardbyid = async (req, res) => {
         const { id } = req.params;
         const authUserId = req.user.id;
         const isAdmin = req.user.role === 'admin';
-        const isClient = req.user.role === 'customer';
+        const isClient = req.user.role === 'customer' || req.user.role === 'professional';
 
         const moodboard = await Moodboard.findById(id)
             .populate("projectId")

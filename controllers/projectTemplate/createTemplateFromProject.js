@@ -10,17 +10,27 @@ const createTemplateFromProject = async (req, res) => {
     try {
         const { projectId } = req.params;
         const userId = req.user.id;
+        const role = req.user.role;
 
         const project = await Project.findById(projectId);
         if (!project) {
             return fail(res, new Error("Project not found"), 404);
         }
 
+        const isOwner = project.architectId && project.architectId.toString() === userId.toString();
+        if (role !== "admin" && !isOwner) {
+            return fail(res, new Error("Unauthorized to create a template from this project"), 403);
+        }
+
         // 1. Create Project Template
         const templateData = {
             creatorId: userId,
             templateName: `${project.projectName} Template`,
+            location: project.location,
+            estimatedDuration: project.estimatedDuration,
+            budget: project.budget,
             type: project.type,
+            phase: project.phase,
             size: project.size,
             description: project.description,
             coverImage: project.coverImage

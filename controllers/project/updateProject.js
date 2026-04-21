@@ -17,7 +17,7 @@ const updateProject = async (req, res) => {
         }
 
         // Selected update of allowed fields only
-        const allowedFields = ['projectName', 'clientName', 'phase', 'status', 'budget', 'description', 'size', 'type', 'coverImage', 'privacyControls'];
+        const allowedFields = ['projectName', 'clientName', 'location', 'phase', 'status', 'budget', 'description', 'size', 'type', 'estimatedDuration', 'coverImage', 'privacyControls'];
 
         allowedFields.forEach((field) => {
             if (req.body[field] !== undefined) {
@@ -29,6 +29,8 @@ const updateProject = async (req, res) => {
                 } else if (field === 'projectName') {
                     // Normalize projectName: trim and collapse spaces
                     project[field] = req.body[field].trim().replace(/\s+/g, ' ');
+                } else if ((field === 'location' || field === 'estimatedDuration') && typeof req.body[field] === 'object' && req.body[field] !== null) {
+                    project[field] = req.body[field];
                 } else {
                     project[field] = req.body[field];
                 }

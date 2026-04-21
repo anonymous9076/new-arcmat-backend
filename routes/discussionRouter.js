@@ -10,12 +10,12 @@ import upload from "../middlewares/imageUploader.js";
 const router = express.Router();
 
 // Get all comments for a project
-router.get("/:projectId", authenticateToken(['architect', 'customer', 'retailer', 'admin']), getComments);
+router.get("/:projectId", authenticateToken(['architect', 'customer', 'professional', 'retailer', 'admin']), getComments);
 
 // Post a new comment
-router.post("/:projectId", authenticateToken(['architect', 'customer', 'retailer', 'admin']), upload.array("attachments", 10), postComment);
+router.post("/:projectId", authenticateToken(['architect', 'customer', 'professional', 'retailer', 'admin']), upload.array("attachments", 10), postComment);
 
 // Delete a comment
-router.delete("/comment/:commentId", authenticateToken(['architect', 'customer', 'retailer', 'admin']), deleteComment);
+router.delete("/comment/:commentId", authenticateToken(['architect', 'customer', 'professional', 'retailer', 'admin']), deleteComment);
 
 export default router;

@@ -22,10 +22,10 @@ router.post("/", authenticateToken(['architect']), createProject);
 router.post("/:projectId/invite-client", authenticateToken(['architect']), inviteClient);
 router.get("/", authenticateToken(["customer", "architect", "retailer", "admin", "brand"]), getProjects);
 router.get("/:id", authenticateToken(["customer", "architect", "retailer", "admin", "brand"]), getProjects);
-router.post("/:id/complete", authenticateToken(['architect']), completeProject);
-router.get("/:id/space/:spaceId/notifications", authenticateToken(["customer", "architect", "admin"]), getProductNotifications);
-router.post("/mark-retailer-read", authenticateToken(["architect", "retailer", "admin"]), markRetailerChatRead);
-router.post("/:id/mark-read", authenticateToken(["customer", "architect", "retailer", "admin"]), markNotificationsRead);
+router.post("/:id/complete", authenticateToken(['architect', 'admin']), completeProject);
+router.get("/:id/space/:spaceId/notifications", authenticateToken(["customer", "professional", "architect", "admin"]), getProductNotifications);
+router.post("/mark-retailer-read", authenticateToken(["architect", "retailer", "admin", "professional"]), markRetailerChatRead);
+router.post("/:id/mark-read", authenticateToken(["customer", "professional", "architect", "retailer", "admin"]), markNotificationsRead);
 router.patch("/:id", authenticateToken(['architect']), upload.fields([{ name: 'coverImage', maxCount: 1 }]), updateProject);
 router.delete("/:id", authenticateToken(['architect']), deleteProject);
 
