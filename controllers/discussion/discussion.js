@@ -271,8 +271,9 @@ export const postComment = async (req, res) => {
 export const getComments = async (req, res) => {
     try {
         const { projectId: rawProjectId } = req.params;
-        const { spaceId, retailerId, materialId, isInternal } = req.query;
+        const { spaceId, retailerId, materialId, isInternal, aggregate } = req.query;
         const isClient = req.user.role === 'customer';
+        const isAggregated = aggregate === 'true';
 
         let query = {};
 
@@ -315,7 +316,7 @@ export const getComments = async (req, res) => {
             query.isInternal = true;
         } else if (materialId) {
             query.referencedMaterialId = materialId;
-        } else if (!isClient && !spaceId) {
+        } else if (!isClient && !spaceId && !isAggregated) {
             query.retailerId = null;
             query.spaceId = null;
             query.referencedMaterialId = null;
