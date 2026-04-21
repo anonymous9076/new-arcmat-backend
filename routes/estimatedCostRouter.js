@@ -8,7 +8,7 @@ import validateObjectId from "../middlewares/validateObjectId.js";
 const router = express.Router();
 
 // Apply authentication
-router.use(authenticateToken(['architect', 'admin']));
+router.use(authenticateToken(['architect', 'customer', 'professional', 'admin']));
 
 router.post("/", createestimatedcost);
 router.patch("/:id", validateObjectId, updateestimatedcost);

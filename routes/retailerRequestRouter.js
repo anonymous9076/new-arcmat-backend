@@ -25,7 +25,7 @@ router.get("/assigned", authenticateToken(['retailer']), getRetailerAssignedRequ
 router.post("/:projectId", authenticateToken(['architect', 'professional']), createRetailerRequest);
 
 // Get all retailer requests for a project
-router.get("/:projectId", authenticateToken(['architect', 'professional', 'admin']), getProjectRetailerRequests);
+router.get("/:projectId", authenticateToken(['architect', 'professional', 'customer', 'admin']), getProjectRetailerRequests);
 
 // Admin/Arcmat updates a request (confirm, share details)
 router.patch("/:requestId", authenticateToken(['admin']), updateRetailerRequest);

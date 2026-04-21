@@ -19,7 +19,7 @@ router.get("/list/all", authenticateToken(["customer", "professional", "architec
 router.get("/project/:projectId", authenticateToken(["customer", "professional", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardbyproject);
 router.get("/list/:projectId", authenticateToken(["customer", "professional", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardlist);
 router.get("/id/:id", authenticateToken(["customer", "professional", "architect", "retailer", "admin", "brand"]), validateObjectId, getmoodboardbyid);
-router.patch("/:id", authenticateToken(['architect']), validateObjectId, upload.fields([{ name: 'coverImage', maxCount: 1 }]), updatemoodboard);
+router.patch("/:id", authenticateToken(['architect', 'customer', 'professional', 'admin']), validateObjectId, upload.fields([{ name: 'coverImage', maxCount: 1 }]), updatemoodboard);
 router.delete("/:id", authenticateToken(['architect']), validateObjectId, deletemoodboard);
 
 export default router;

@@ -5,7 +5,7 @@ import authenticateToken from "../middlewares/verifyToken.js";
 const router = express.Router();
 
 // Architects can submit ratings
-router.post("/submit", authenticateToken(['architect']), submitRatings);
+router.post("/submit", authenticateToken(['architect', 'customer', 'professional', 'admin']), submitRatings);
 
 // Public/Authenticated view of user ratings
 router.get("/user/:userId", authenticateToken(), getUserRatings);
