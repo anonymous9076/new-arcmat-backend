@@ -16,7 +16,7 @@ const updateuser = async (req, res) => {
     // Mass Assignment Protection: Whitelist fields
     const allowedFields = ['name', 'mobile', 'profile', 'professionalType', 'retailerProfile', 'selectedBrands'];
     if (req.user.role === 'admin') {
-      allowedFields.push('role', 'isActive', 'isEmailVerified');
+      allowedFields.push('role', 'isActive', 'isEmailVerified', 'isVerified');
     }
 
     const updates = {};

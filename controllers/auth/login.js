@@ -27,6 +27,11 @@ const login = async (req, res) => {
       return fail(res, { message: "Account is deactivated. Please contact support." }, 403);
     }
 
+    // Check if architect is verified by admin
+    if (user.role === 'architect' && !user.isVerified) {
+      return fail(res, { message: "Let admin verify your details first please wait" }, 403);
+    }
+
     const isMatch = await bcrypt.compare(password.trim(), user.password);
     if (!isMatch) {
       return fail(res, { message: "Invalid credentials" }, 401);

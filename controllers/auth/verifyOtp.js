@@ -48,6 +48,19 @@ const verifyOtp = async (req, res) => {
         user.verificationExpires = undefined;
         await user.save();
 
+        if (user.role === 'architect' && !user.isVerified) {
+            return success(res, {
+                message: "OTP verified successfully",
+                requireAdminVerification: true,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                }
+            });
+        }
+
         const token = jwt.sign(
             {
                 id: user._id,
