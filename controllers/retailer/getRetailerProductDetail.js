@@ -47,7 +47,37 @@ const getRetailerProductDetail = async (req, res) => {
         }
 
         // 2. Transform variants to include retailer overrides and wishlist status
-        const variantIds = inventoryEntries.map(e => e.variantId?._id).filter(Boolean);
+        const requestedRetailerId = req.query.retailerId;
+
+        // Group inventory entries by variantId to avoid duplicate variants in the selection list
+        // Selection criteria: Prioritize requested retailer, then lowest price.
+        const groupedEntries = new Map();
+        inventoryEntries.forEach(entry => {
+            const vId = entry.variantId?._id?.toString() || entry.variantId?.toString();
+            if (!vId) return;
+
+            const existing = groupedEntries.get(vId);
+            const isRequestedRetailer = requestedRetailerId && entry.retailerId?.toString() === requestedRetailerId.toString();
+
+            if (!existing) {
+                groupedEntries.set(vId, entry);
+            } else {
+                const existingIsRequested = requestedRetailerId && existing.retailerId?.toString() === requestedRetailerId.toString();
+
+                if (isRequestedRetailer && !existingIsRequested) {
+                    groupedEntries.set(vId, entry);
+                } else if (isRequestedRetailer === existingIsRequested) {
+                    // If both match (or neither match) the requested retailer, pick the cheaper one
+                    if (entry.selling_price < existing.selling_price) {
+                        groupedEntries.set(vId, entry);
+                    }
+                }
+            }
+        });
+
+        const uniqueEntries = Array.from(groupedEntries.values());
+        const variantIds = uniqueEntries.map(e => e.variantId?._id).filter(Boolean);
+        
         const variantWishlistEntries = user_id
             ? await wishlist.find({
                 user_id,
@@ -59,7 +89,7 @@ const getRetailerProductDetail = async (req, res) => {
             variantWishlistEntries.map((entry) => [entry.product_variant_id.toString(), true])
         );
 
-        const variantsWithOverrides = inventoryEntries.map(entry => {
+        const variantsWithOverrides = uniqueEntries.map(entry => {
             const variant = entry.variantId;
             if (!variant) return null;
 
@@ -79,7 +109,7 @@ const getRetailerProductDetail = async (req, res) => {
             };
         }).filter(Boolean);
 
-        // Calculate aggregate metadata
+        // Calculate aggregate metadata based on the best available offers
         const prices = variantsWithOverrides.map(v => v.selling_price).filter(p => p !== undefined);
         const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
         const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
@@ -91,7 +121,11 @@ const getRetailerProductDetail = async (req, res) => {
         const subsubcategory = rootProduct.subsubcategoryId ? [rootProduct.subsubcategoryId] : [];
 
         // Identify the primary retailer for this product view context
-        const primaryRetailerId = variantsWithOverrides.length > 0 ? variantsWithOverrides[0].retailerId : null;
+        // If we had a requestedRetailerId that matched something, use that, otherwise use the first available
+        let primaryRetailerId = requestedRetailerId;
+        if (!primaryRetailerId && variantsWithOverrides.length > 0) {
+            primaryRetailerId = variantsWithOverrides[0].retailerId;
+        }
 
         const responseData = {
             ...rootProduct,
