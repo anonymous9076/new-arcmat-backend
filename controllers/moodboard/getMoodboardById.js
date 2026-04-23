@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Moodboard from "../../models/moodboard.js";
 import EstimatedCost from "../../models/estimatedCost.js";
 import RetailerProduct from "../../models/retailerproduct.js";
@@ -16,24 +17,7 @@ const getmoodboardbyid = async (req, res) => {
 
         const moodboard = await Moodboard.findById(id)
             .populate("projectId")
-            .populate({
-                path: "estimatedCostId",
-                populate: {
-                    path: "productIds",
-                    model: "RetailerProduct",
-                    populate: [
-                        {
-                            path: 'productId',
-                            model: 'Product',
-                            populate: { path: 'brand categoryId subcategoryId' }
-                        },
-                        {
-                            path: 'variantId',
-                            model: 'variant'
-                        }
-                    ]
-                }
-            })
+            .populate("estimatedCostId")
             .lean();
 
         if (!moodboard) {
@@ -41,7 +25,47 @@ const getmoodboardbyid = async (req, res) => {
         }
 
         if (moodboard.estimatedCostId) {
-            moodboard.estimatedCostId.productIds = (moodboard.estimatedCostId.productIds || []).filter(p => p !== null);
+            const rawProductIds = moodboard.estimatedCostId.productIds || [];
+            
+            const resolvedProducts = await Promise.all(rawProductIds.map(async (id) => {
+                if (!id) return null;
+
+                try {
+                    // 1. Try to find as a RetailerProduct
+                    let rp = await mongoose.model('RetailerProduct').findById(id)
+                        .populate({
+                            path: 'productId',
+                            model: 'Product',
+                            populate: { path: 'brand categoryId subcategoryId' }
+                        })
+                        .populate({
+                            path: 'variantId',
+                            model: 'variant'
+                        })
+                        .lean();
+                    
+                    if (rp && rp.productId) return rp;
+
+                    // 2. Try to find as a base Product (Legacy)
+                    const baseProduct = await mongoose.model('Product').findById(id)
+                        .populate('brand categoryId subcategoryId')
+                        .lean();
+                    
+                    if (baseProduct) {
+                        return {
+                            _id: id,
+                            productId: baseProduct,
+                            isLegacy: true,
+                            selling_price: 0
+                        };
+                    }
+                } catch (err) {
+                    console.error("Product resolve error for ID:", id, err);
+                }
+                return null;
+            }));
+
+            moodboard.estimatedCostId.productIds = resolvedProducts.filter(p => p !== null);
             moodboard.estimatedCostId.products = moodboard.estimatedCostId.productIds;
         }
 

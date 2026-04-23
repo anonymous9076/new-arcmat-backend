@@ -25,7 +25,7 @@ const notificationSchema = mongoose.Schema(
         type: {
             type: String,
             required: true,
-            enum: ['RETAILER_CONTACT_REQUEST', 'SYSTEM_ANNOUNCEMENT', 'CONTACT_SHARE_CONFIRMED', 'NEW_MESSAGE', 'REQUEST_STATUS_UPDATE'],
+            enum: ['RETAILER_CONTACT_REQUEST', 'SYSTEM_ANNOUNCEMENT', 'CONTACT_SHARE_CONFIRMED', 'NEW_MESSAGE', 'REQUEST_STATUS_UPDATE', 'SAMPLE_REQUEST'],
         },
         message: {
             type: String,

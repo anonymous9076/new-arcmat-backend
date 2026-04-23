@@ -3,11 +3,11 @@ import { success, fail } from '../../middlewares/responseHandler.js';
 
 const cartcount = async (req, res) => {
   try {
-    if (req.user === "not_login") {
+    if (!req.user || req.user === "not_login") {
       return success(res, { status: 1, totalItems: 0 });
     }
 
-    const user_id = req.user.id;
+    const user_id = req.user.id || req.user._id;
     const userCart = await cart.find({ user_id, orderstatus: "add to cart" });
 
     let totalItems = 0;

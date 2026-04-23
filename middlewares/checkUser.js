@@ -10,7 +10,11 @@ const checkuser = (req, res, next) => {
   } else {
     const token = authorizationHeader.slice(7).replace(/"/g, '');
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      req.user = decoded;
+      if (err) {
+        req.user = "not_login";
+      } else {
+        req.user = decoded;
+      }
       next();
     });
   }
