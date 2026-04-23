@@ -17,7 +17,10 @@ const getmoodboardbyid = async (req, res) => {
 
         const moodboard = await Moodboard.findById(id)
             .populate("projectId")
-            .populate("estimatedCostId")
+            .populate({
+                path: "estimatedCostId",
+                model: "EstimatedCost"
+            })
             .lean();
 
         if (!moodboard) {

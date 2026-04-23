@@ -2,6 +2,7 @@ import Project from "../../models/project.js";
 import Moodboard from "../../models/moodboard.js";
 import Discussion from "../../models/discussion.js";
 import MaterialHistory from "../../models/materialHistory.js";
+import EstimatedCost from "../../models/estimatedCost.js";
 import mongoose from "mongoose";
 import { success, fail } from '../../middlewares/responseHandler.js';
 
@@ -42,6 +43,7 @@ const getMoodboardsWithCounts = async (projectId, userId, isClient) => {
     const moodboards = await Moodboard.find({ projectId })
         .populate({
             path: "estimatedCostId",
+            model: "EstimatedCost",
             populate: {
                 path: "productIds",
                 model: "RetailerProduct",
