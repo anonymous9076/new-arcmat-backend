@@ -55,11 +55,14 @@ const getmoodboardbyid = async (req, res) => {
                         .lean();
                     
                     if (baseProduct) {
+                        // For legacy products, try to find the first variant to get a price
+                        const firstVariant = await mongoose.model('variant').findOne({ productId: id }).lean();
                         return {
                             _id: id,
                             productId: baseProduct,
                             isLegacy: true,
-                            selling_price: 0
+                            selling_price: firstVariant ? firstVariant.selling_price : 0,
+                            mrp_price: firstVariant ? firstVariant.mrp_price : 0
                         };
                     }
                 } catch (err) {
