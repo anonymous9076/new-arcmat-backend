@@ -31,7 +31,19 @@ const getmoodboardbyproject = async (req, res) => {
 
         const moodboards = await Moodboard.find({ projectId })
             .populate("projectId")
-            .populate("estimatedCostId")
+            .populate({
+                path: "estimatedCostId",
+                model: "EstimatedCost",
+                populate: {
+                    path: "productIds",
+                    model: "RetailerProduct",
+                    populate: {
+                        path: "productId",
+                        model: "Product",
+                        select: "product_name product_images images"
+                    }
+                }
+            })
             .sort({ createdAt: -1 })
             .lean();
 

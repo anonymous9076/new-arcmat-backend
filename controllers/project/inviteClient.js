@@ -46,7 +46,7 @@ export const inviteClient = async (req, res) => {
         const architectName = architect?.fullName || "An architect";
 
         // Professional invitation message
-        const invitationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/invite/accept?projectId=${projectId}&email=${encodeURIComponent(email)}`;
+        const invitationLink = `${process.env.FRONTEND_URL}/invite/accept?projectId=${projectId}&email=${encodeURIComponent(email)}`;
 
         const emailResult = await sendInvitationEmail(email, name, architectName, project.projectName, invitationLink);
 
