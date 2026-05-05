@@ -73,6 +73,15 @@ const categorySchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    categoryType: {
+      type: String,
+      enum: ['product', 'contractor_service', 'custom_maker'],
+      default: 'product',
+    },
+    sectionSlug: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true }
 );

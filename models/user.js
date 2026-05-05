@@ -26,7 +26,7 @@ const userSchema = mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["customer", "architect", "retailer", "admin", "brand"],
+      enum: ["customer", "architect", "retailer", "admin", "brand", "contractor"],
       default: "customer"
     },
     professionalType: {
@@ -81,7 +81,16 @@ const userSchema = mongoose.Schema(
     invitedProjects: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project'
-    }]
+    }],
+    contractorProfile: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Contractor'
+    },
+    providerType: {
+      type: String,
+      enum: ['contractor', 'custom_maker', 'bespoke_vendor', null],
+      default: null
+    }
   },
   {
     timestamps: true

@@ -11,7 +11,7 @@ dotenv.config();
 
 const register = async (req, res) => {
   try {
-    const { name, email, mobile, password, role, profile, professionalType } = req.body;
+    const { name, email, mobile, password, role, profile, professionalType, providerType } = req.body;
 
     if (!name || !email || !mobile || !password || !role) {
       return fail(res, { message: "All fields are required" }, 400);
@@ -29,6 +29,7 @@ const register = async (req, res) => {
       role,
       profile,
       professionalType,
+      providerType,
       verificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
     });
     const response = await createuser.save();

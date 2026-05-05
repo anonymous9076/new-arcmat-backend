@@ -35,6 +35,7 @@ import ratingRouter from "./routes/ratingRouter.js";
 import notificationRouter from "./routes/notificationRouter.js";
 import inspirationGalleryRouter from "./routes/inspirationGalleryRouter.js";
 import projectTemplateRouter from "./routes/projectTemplateRouter.js";
+import contractorRouter from "./routes/contractorRouter.js";
 
 
 
@@ -127,6 +128,7 @@ app.use("/api/rating", ratingRouter);
 app.use("/api/notification", notificationRouter);
 app.use("/api/inspiration-gallery", inspirationGalleryRouter);
 app.use("/api/project-templates", projectTemplateRouter);
+app.use("/api/contractor", contractorRouter);
 
 
 
