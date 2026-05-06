@@ -19,7 +19,8 @@ const getContractorList = async (req, res) => {
         const query = {};
 
         // Filtering
-        if (status) query.status = status;
+        // if (status) query.status = status; // Temporarily disabled status filter
+        query.visibility = 'public'; // Only show public profiles
         if (city) query["location.city"] = new RegExp(city, "i");
         if (categoryId) query.categoryId = categoryId;
         if (providerType) query.providerType = providerType;

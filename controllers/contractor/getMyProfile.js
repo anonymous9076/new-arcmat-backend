@@ -1,4 +1,5 @@
 import Contractor from "../../models/contractor.js";
+import ContractorPortfolioItem from "../../models/contractorPortfolioItem.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
 
 const getMyProfile = async (req, res) => {
@@ -17,7 +18,10 @@ const getMyProfile = async (req, res) => {
             return success(res, { profile: null, message: "No profile found for this user" });
         }
 
-        return success(res, { profile });
+        const portfolio = await ContractorPortfolioItem.find({ contractorId: profile._id })
+            .sort({ displayOrder: 1, createdAt: -1 });
+
+        return success(res, { profile, portfolio });
     } catch (error) {
         console.error("getMyProfile error:", error);
         return fail(res, error.message, 500);

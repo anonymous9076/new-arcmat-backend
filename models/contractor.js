@@ -127,7 +127,12 @@ const contractorSchema = new mongoose.Schema(
         // Admin Metadata
         adminNotes: String,
         rejectionReason: String,
-        publishedAt: Date
+        publishedAt: Date,
+        visibility: {
+            type: String,
+            enum: ['public', 'private'],
+            default: 'public'
+        }
     },
     { timestamps: true }
 );
