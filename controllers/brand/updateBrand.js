@@ -137,6 +137,26 @@ const updatebrand = async (req, res) => {
 
       bespokePage.galleryMedia = galleryMedia.slice(0, 8);
 
+      // FIX: customImage is stored as a SEPARATE field from galleryMedia.
+      // The frontend merges both into one list, so if the user removes customImage
+      // we must explicitly clear it here — otherwise it reappears on every reload.
+      if (currentBespoke.customImage && req.body.bespokeExistingGalleryMedia !== undefined) {
+        const customPublicId = currentBespoke.customImage?.public_id || currentBespoke.customImage;
+        const stillPresent = galleryMedia.some(
+          (m) => (m?.public_id || m?.secure_url || m) === customPublicId ||
+                 (m?.secure_url && currentBespoke.customImage?.secure_url && m.secure_url === currentBespoke.customImage.secure_url)
+        );
+        if (!stillPresent) {
+          bespokePage.customImage = null;
+          // Clean up orphaned S3 file
+          if (currentBespoke.customImage?.public_id) {
+            s3Delete(currentBespoke.customImage.public_id).catch((err) =>
+              console.error('S3 cleanup error for removed customImage:', err)
+            );
+          }
+        }
+      }
+
       updateObj.bespokePage = bespokePage;
     }
 
