@@ -6,6 +6,12 @@ import productbybrand from "../controllers/brand/frontendProductByBrand.js";
 import updatebrand from "../controllers/brand/updateBrand.js";
 import deletebrand from "../controllers/brand/deleteBrand.js";
 import brandsingle from "../controllers/brand/brandSingle.js";
+import getBespokeOptions from "../controllers/brand/getBespokeOptions.js";
+import {
+  createContractorBespokeRequest,
+  decideContractorBespokeRequest,
+  listContractorBespokeRequests
+} from "../controllers/brand/contractorBespokeRequests.js";
 import authenticateToken from "../middlewares/verifyToken.js";
 
 const router = express.Router()
@@ -15,9 +21,16 @@ router.post('/', authenticateToken(['admin', 'brand']), upload.brand.fields([
 ]), createbrand);
 router.get('/', getBrandList);
 router.get('/products/:name', productbybrand);
+router.get('/:id/bespoke-options', authenticateToken(['admin', 'brand']), getBespokeOptions);
+router.post('/:id/contractor-requests', authenticateToken(['contractor']), createContractorBespokeRequest);
+router.get('/:id/contractor-requests', authenticateToken(['admin', 'brand', 'contractor']), listContractorBespokeRequests);
+router.patch('/:id/contractor-requests/:requestId', authenticateToken(['admin', 'brand']), decideContractorBespokeRequest);
 router.get('/:id', brandsingle);
 router.delete('/:id', authenticateToken(['admin']), deletebrand);
 router.patch('/:id', authenticateToken(['admin', 'brand']), upload.brand.fields([
   { name: 'brand_image', maxCount: 1 },
+  { name: 'bespokeHeroImage', maxCount: 1 },
+  { name: 'bespokeCustomImage', maxCount: 1 },
+  { name: 'bespokeGalleryMedia', maxCount: 8 },
 ]), updatebrand);
 export default router;

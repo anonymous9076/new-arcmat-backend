@@ -6,12 +6,18 @@ const brandsingle = async (req, res) => {
   try {
     let branddetail = await Brand.findById(req.params.id)
       .populate('userId', 'name email profile')
+      .populate('bespokePage.selectedProductIds', 'product_name product_images description status brand')
+      .populate('bespokePage.selectedRetailerIds', 'name email mobile profile retailerProfile selectedBrands')
+      .populate('bespokePage.selectedContractorIds', 'businessName slug tagline profileImage location experienceYears isVerified status')
       .lean();
 
     // If not found by ID, try finding by userId
     if (!branddetail) {
       branddetail = await Brand.findOne({ userId: req.params.id })
         .populate('userId', 'name email profile')
+        .populate('bespokePage.selectedProductIds', 'product_name product_images description status brand')
+        .populate('bespokePage.selectedRetailerIds', 'name email mobile profile retailerProfile selectedBrands')
+        .populate('bespokePage.selectedContractorIds', 'businessName slug tagline profileImage location experienceYears isVerified status')
         .lean();
     }
 

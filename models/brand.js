@@ -30,6 +30,42 @@ const brandSchema = new mongoose.Schema(
 
         description: String,
         website: String,
+        bespokePage: {
+            headline: String,
+            bio: String,
+            heroImage: mongoose.Schema.Types.Mixed,
+            customImage: mongoose.Schema.Types.Mixed,
+            galleryMedia: [{
+                type: mongoose.Schema.Types.Mixed
+            }],
+            selectedProductIds: [{
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Product'
+            }],
+            selectedRetailerIds: [{
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Usertable'
+            }],
+            selectedContractorIds: [{
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Contractor'
+            }],
+            reviews: [{
+                name: String,
+                role: String,
+                rating: {
+                    type: Number,
+                    min: 1,
+                    max: 5,
+                    default: 5
+                },
+                comment: String
+            }],
+            isPublished: {
+                type: Boolean,
+                default: true
+            }
+        },
         isActive: { type: Number, default: 1 },
         showOnHomepage: { type: Number, default: 0 },
     },
