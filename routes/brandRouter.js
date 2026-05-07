@@ -21,6 +21,11 @@ const bespokeCardFileFields = Array.from({ length: 50 }, (_, index) => ([
   { name: `bespokeCatalogFile_${index}`, maxCount: 1 },
   { name: `bespokeVideoPoster_${index}`, maxCount: 1 },
   { name: `bespokeNewsImage_${index}`, maxCount: 1 },
+  { name: `bespokeProjectMainImage_${index}`, maxCount: 1 },
+  { name: `bespokeProjectGallery_${index}_0`, maxCount: 1 },
+  { name: `bespokeProjectGallery_${index}_1`, maxCount: 1 },
+  { name: `bespokeProjectGallery_${index}_2`, maxCount: 1 },
+  { name: `bespokeProjectGallery_${index}_3`, maxCount: 1 },
 ])).flat();
 
 router.post('/', authenticateToken(['admin', 'brand']), upload.brand.fields([

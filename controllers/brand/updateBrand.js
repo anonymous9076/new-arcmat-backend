@@ -140,7 +140,8 @@ const updatebrand = async (req, res) => {
       'bespokeCollections',
       'bespokeCatalogs',
       'bespokeVideos',
-      'bespokeNews'
+      'bespokeNews',
+      'bespokeProjects'
     ];
     const hasBespokePayload = bespokeFields.some((field) => req.body[field] !== undefined)
       || req.files?.bespokeHeroImage
@@ -218,6 +219,19 @@ const updatebrand = async (req, res) => {
           };
         });
       }
+      if (req.body.bespokeProjects !== undefined) {
+        bespokePage.projects = normalizeEditableArray(req.body.bespokeProjects, (item) => {
+          const title = String(item?.title || '').trim();
+          if (!title) return null;
+          return {
+            title,
+            overview: String(item?.overview || '').trim(),
+            price: String(item?.price || '').trim(),
+            mainImage: item?.mainImage || '',
+            gallery: Array.isArray(item?.gallery) ? item.gallery : []
+          };
+        });
+      }
 
       const bespokeFiles = req.files || {};
       bespokePage.collections = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeCollectionImage', bespokePage.collections || [], 'image', currentBespoke.collections || [], 'image', currentUserId);
@@ -225,6 +239,31 @@ const updatebrand = async (req, res) => {
       bespokePage.catalogs = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeCatalogFile', bespokePage.catalogs || [], 'file', currentBespoke.catalogs || [], 'file', currentUserId);
       bespokePage.videos = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeVideoPoster', bespokePage.videos || [], 'poster', currentBespoke.videos || [], 'poster', currentUserId);
       bespokePage.news = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeNewsImage', bespokePage.news || [], 'image', currentBespoke.news || [], 'image', currentUserId);
+      bespokePage.projects = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeProjectMainImage', bespokePage.projects || [], 'mainImage', currentBespoke.projects || [], 'mainImage', currentUserId);
+
+      // Handle project gallery images manually since they are nested
+      if (bespokePage.projects && bespokePage.projects.length > 0) {
+        for (let pIndex = 0; pIndex < bespokePage.projects.length; pIndex++) {
+          const project = bespokePage.projects[pIndex];
+          const oldProject = currentBespoke.projects?.[pIndex] || {};
+          let newGallery = Array.isArray(project.gallery) ? [...project.gallery] : [];
+          
+          for (let gIndex = 0; gIndex < 4; gIndex++) {
+            const galleryFiles = bespokeFiles[`bespokeProjectGallery_${pIndex}_${gIndex}`];
+            if (galleryFiles) {
+              const uploadResults = await s3Upload(currentUserId || 'admin', galleryFiles, 'brands');
+              if (uploadResults.length > 0) {
+                const oldMedia = oldProject.gallery?.[gIndex];
+                if (oldMedia?.public_id) {
+                  s3Delete(oldMedia.public_id).catch(err => console.error('S3 cleanup error during bespoke project gallery update:', err));
+                }
+                newGallery[gIndex] = uploadResults[0];
+              }
+            }
+          }
+          project.gallery = newGallery.filter(Boolean); // keep valid entries
+        }
+      }
 
       const heroImage = await uploadSingleBespokeImage('bespokeHeroImage', currentBespoke.heroImage);
       if (heroImage !== undefined) bespokePage.heroImage = heroImage;

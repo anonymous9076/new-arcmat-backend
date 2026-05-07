@@ -77,6 +77,15 @@ const brandSchema = new mongoose.Schema(
                 excerpt: String,
                 body: String
             }],
+            projects: [{
+                title: String,
+                overview: String,
+                price: String,
+                mainImage: mongoose.Schema.Types.Mixed,
+                gallery: [{
+                    type: mongoose.Schema.Types.Mixed
+                }]
+            }],
             selectedProductIds: [{
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Product'
