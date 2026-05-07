@@ -41,14 +41,14 @@ const brandSchema = new mongoose.Schema(
             galleryMedia: [{
                 type: mongoose.Schema.Types.Mixed
             }],
-            solutions: [{
-                title: String,
-                image: mongoose.Schema.Types.Mixed,
-                text: String
-            }],
             collections: [{
                 title: String,
+                description: String,
                 image: mongoose.Schema.Types.Mixed,
+                productIds: [{
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Product'
+                }],
                 materials: [String],
                 variants: [String],
                 specs: [String]

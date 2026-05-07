@@ -137,7 +137,6 @@ const updatebrand = async (req, res) => {
       'bespokeTags',
       'bespokeTheme',
       'bespokeContact',
-      'bespokeSolutions',
       'bespokeCollections',
       'bespokeCatalogs',
       'bespokeVideos',
@@ -154,7 +153,7 @@ const updatebrand = async (req, res) => {
 
       if (req.body.bespokeHeadline !== undefined) bespokePage.headline = req.body.bespokeHeadline;
       if (req.body.bespokeBio !== undefined) bespokePage.bio = req.body.bespokeBio;
-      if (req.body.bespokeSelectedProductIds !== undefined) bespokePage.selectedProductIds = normalizeObjectIdArray(req.body.bespokeSelectedProductIds);
+      if (req.body.bespokeSelectedProductIds !== undefined) bespokePage.selectedProductIds = normalizeObjectIdArray(req.body.bespokeSelectedProductIds).slice(0, 12);
       if (req.body.bespokeSelectedRetailerIds !== undefined) bespokePage.selectedRetailerIds = normalizeObjectIdArray(req.body.bespokeSelectedRetailerIds);
       if (req.body.bespokeSelectedContractorIds !== undefined) bespokePage.selectedContractorIds = normalizeObjectIdArray(req.body.bespokeSelectedContractorIds);
       if (req.body.bespokeReviews !== undefined) bespokePage.reviews = normalizeReviews(req.body.bespokeReviews);
@@ -162,24 +161,15 @@ const updatebrand = async (req, res) => {
       if (req.body.bespokeTags !== undefined) bespokePage.tags = normalizeStringArray(req.body.bespokeTags);
       if (req.body.bespokeTheme !== undefined) bespokePage.theme = normalizePlainObject(req.body.bespokeTheme);
       if (req.body.bespokeContact !== undefined) bespokePage.contact = normalizePlainObject(req.body.bespokeContact);
-      if (req.body.bespokeSolutions !== undefined) {
-        bespokePage.solutions = normalizeEditableArray(req.body.bespokeSolutions, (item) => {
-          const title = String(item?.title || '').trim();
-          if (!title) return null;
-          return {
-            title,
-            image: item?.image || '',
-            text: String(item?.text || '').trim()
-          };
-        });
-      }
       if (req.body.bespokeCollections !== undefined) {
         bespokePage.collections = normalizeEditableArray(req.body.bespokeCollections, (item) => {
           const title = String(item?.title || '').trim();
           if (!title) return null;
           return {
             title,
+            description: String(item?.description || '').trim(),
             image: item?.image || '',
+            productIds: normalizeObjectIdArray(item?.productIds || []),
             materials: normalizeStringArray(item?.materials || []),
             variants: normalizeStringArray(item?.variants || []),
             specs: normalizeStringArray(item?.specs || [])
@@ -230,7 +220,6 @@ const updatebrand = async (req, res) => {
       }
 
       const bespokeFiles = req.files || {};
-      bespokePage.solutions = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeSolutionImage', bespokePage.solutions || [], 'image', currentBespoke.solutions || [], 'image', currentUserId);
       bespokePage.collections = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeCollectionImage', bespokePage.collections || [], 'image', currentBespoke.collections || [], 'image', currentUserId);
       bespokePage.catalogs = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeCatalogCover', bespokePage.catalogs || [], 'cover', currentBespoke.catalogs || [], 'cover', currentUserId);
       bespokePage.catalogs = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeCatalogFile', bespokePage.catalogs || [], 'file', currentBespoke.catalogs || [], 'file', currentUserId);

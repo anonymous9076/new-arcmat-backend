@@ -16,7 +16,10 @@ const getBespokeOptions = async (req, res) => {
 
     const [products, retailers, contractors] = await Promise.all([
       Product.find({ brand: brand._id })
-        .select('product_name product_images description status brand')
+        .select('product_name product_images description status brand categoryId subcategoryId subsubcategoryId')
+        .populate('categoryId', 'name image slug level')
+        .populate('subcategoryId', 'name image slug level')
+        .populate('subsubcategoryId', 'name image slug level')
         .sort({ updatedAt: -1 })
         .limit(200)
         .lean(),

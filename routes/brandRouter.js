@@ -15,6 +15,13 @@ import {
 import authenticateToken from "../middlewares/verifyToken.js";
 
 const router = express.Router()
+const bespokeCardFileFields = Array.from({ length: 50 }, (_, index) => ([
+  { name: `bespokeCollectionImage_${index}`, maxCount: 1 },
+  { name: `bespokeCatalogCover_${index}`, maxCount: 1 },
+  { name: `bespokeCatalogFile_${index}`, maxCount: 1 },
+  { name: `bespokeVideoPoster_${index}`, maxCount: 1 },
+  { name: `bespokeNewsImage_${index}`, maxCount: 1 },
+])).flat();
 
 router.post('/', authenticateToken(['admin', 'brand']), upload.brand.fields([
   { name: 'brand_image', maxCount: 1 },
@@ -32,5 +39,6 @@ router.patch('/:id', authenticateToken(['admin', 'brand']), upload.brand.fields(
   { name: 'bespokeHeroImage', maxCount: 1 },
   { name: 'bespokeCustomImage', maxCount: 1 },
   { name: 'bespokeGalleryMedia', maxCount: 8 },
+  ...bespokeCardFileFields,
 ]), updatebrand);
 export default router;

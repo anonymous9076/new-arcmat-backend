@@ -9,15 +9,15 @@ const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
   const allowedImageTypes = /jpeg|jpg|png|gif|webp/;
   const allowedVideoTypes = /mp4|webm|quicktime|x-msvideo/;
-  const allowedArchiveTypes = /zip|x-zip-compressed|x-zip/;
-  const allowedExtensions = /jpeg|jpg|png|gif|webp|mp4|webm|mov|avi|zip/;
+  const allowedArchiveTypes = /zip|x-zip-compressed|x-zip|pdf/;
+  const allowedExtensions = /jpeg|jpg|png|gif|webp|mp4|webm|mov|avi|zip|pdf/;
   const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedImageTypes.test(file.mimetype) || allowedVideoTypes.test(file.mimetype) || allowedArchiveTypes.test(file.mimetype);
 
   if (mimetype || extname) {
     return cb(null, true);
   } else {
-    cb(new Error('Only image/video files (jpeg, jpg, png, gif, webp, mp4, webm, mov) are allowed!'));
+    cb(new Error('Only image/video/PDF files (jpeg, jpg, png, gif, webp, mp4, webm, mov, pdf) are allowed!'));
   }
 };
 
