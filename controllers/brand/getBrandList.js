@@ -15,7 +15,10 @@ const getBrandList = async (req, res) => {
             page = 1,
             limit = 10,
             search,
-            showOnHomepage
+            showOnHomepage,
+            categoryId,
+            subcategoryId,
+            subsubcategoryId
         } = req.query;
 
         if (type === "distinct") {
@@ -51,11 +54,41 @@ const getBrandList = async (req, res) => {
 
         // Generic search
         if (search) {
+            const searchRegex = new RegExp(search, "i");
             query.$or = [
-                { name: new RegExp(search, "i") },
-                { description: new RegExp(search, "i") },
-                { website: new RegExp(search, "i") }
+                { name: searchRegex },
+                { description: searchRegex },
+                { website: searchRegex }
             ];
+
+            // Search by category names as well
+            const CategoryModel = mongoose.model('Category');
+            const matchingCategories = await CategoryModel.find({ name: searchRegex }).select('_id').lean();
+            if (matchingCategories.length > 0) {
+                const categoryIds = matchingCategories.map(c => c._id);
+                const brandIdsFromSearch = await Product.distinct("brand", {
+                    $or: [
+                        { categoryId: { $in: categoryIds } },
+                        { subcategoryId: { $in: categoryIds } },
+                        { subsubcategoryId: { $in: categoryIds } }
+                    ]
+                });
+                
+                if (brandIdsFromSearch.length > 0) {
+                    query.$or.push({ _id: { $in: brandIdsFromSearch } });
+                }
+            }
+        }
+
+        // Category Hierarchy Filtering
+        if (categoryId || subcategoryId || subsubcategoryId) {
+            const productQuery = {};
+            if (categoryId) productQuery.categoryId = categoryId;
+            if (subcategoryId) productQuery.subcategoryId = subcategoryId;
+            if (subsubcategoryId) productQuery.subsubcategoryId = subsubcategoryId;
+
+            const validBrandIdsFromCategories = await Product.distinct("brand", productQuery);
+            query._id = { $in: validBrandIdsFromCategories };
         }
 
         const sevenDaysAgo = new Date();
