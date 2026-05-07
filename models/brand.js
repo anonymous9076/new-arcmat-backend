@@ -33,10 +33,49 @@ const brandSchema = new mongoose.Schema(
         bespokePage: {
             headline: String,
             bio: String,
+            tags: [String],
+            theme: mongoose.Schema.Types.Mixed,
+            contact: mongoose.Schema.Types.Mixed,
             heroImage: mongoose.Schema.Types.Mixed,
             customImage: mongoose.Schema.Types.Mixed,
             galleryMedia: [{
                 type: mongoose.Schema.Types.Mixed
+            }],
+            solutions: [{
+                title: String,
+                image: mongoose.Schema.Types.Mixed,
+                text: String
+            }],
+            collections: [{
+                title: String,
+                image: mongoose.Schema.Types.Mixed,
+                materials: [String],
+                variants: [String],
+                specs: [String]
+            }],
+            catalogs: [{
+                title: String,
+                year: String,
+                pages: Number,
+                featured: Boolean,
+                cover: mongoose.Schema.Types.Mixed,
+                file: mongoose.Schema.Types.Mixed,
+                url: String
+            }],
+            videos: [{
+                title: String,
+                provider: String,
+                videoId: String,
+                poster: mongoose.Schema.Types.Mixed,
+                url: String
+            }],
+            news: [{
+                title: String,
+                date: String,
+                readTime: String,
+                image: mongoose.Schema.Types.Mixed,
+                excerpt: String,
+                body: String
             }],
             selectedProductIds: [{
                 type: mongoose.Schema.Types.ObjectId,

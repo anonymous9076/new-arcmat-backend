@@ -33,6 +33,40 @@ const normalizeReviews = (value) => {
     .filter((review) => review.name || review.comment);
 };
 
+const normalizeStringArray = (value) => {
+  const parsed = parseMaybeJson(value, []);
+  const list = Array.isArray(parsed) ? parsed : String(parsed || '').split(',');
+  return list.map((item) => String(item || '').trim()).filter(Boolean);
+};
+
+const normalizePlainObject = (value) => {
+  const parsed = parseMaybeJson(value, {});
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+};
+
+const normalizeEditableArray = (value, mapper) => {
+  const parsed = parseMaybeJson(value, []);
+  if (!Array.isArray(parsed)) return [];
+  return parsed.map(mapper).filter(Boolean);
+};
+
+const uploadIndexedBespokeFiles = async (filesByField, prefix, items, targetKey, currentItems = [], currentKey = targetKey, currentUserId) => {
+  const nextItems = [...items];
+  for (let index = 0; index < nextItems.length; index += 1) {
+    const files = filesByField?.[`${prefix}_${index}`];
+    if (!files) continue;
+    const uploadResults = await s3Upload(currentUserId || 'admin', files, 'brands');
+    if (uploadResults.length > 0) {
+      const oldMedia = currentItems[index]?.[currentKey];
+      if (oldMedia?.public_id) {
+        s3Delete(oldMedia.public_id).catch(err => console.error('S3 cleanup error during bespoke card media update:', err));
+      }
+      nextItems[index] = { ...nextItems[index], [targetKey]: uploadResults[0] };
+    }
+  }
+  return nextItems;
+};
+
 const updatebrand = async (req, res) => {
   try {
     const { name, country, description, website, isActive, showOnHomepage, userId, shippingAddress, billingAddress } = req.body;
@@ -99,7 +133,15 @@ const updatebrand = async (req, res) => {
       'bespokeSelectedContractorIds',
       'bespokeReviews',
       'bespokeExistingGalleryMedia',
-      'bespokeIsPublished'
+      'bespokeIsPublished',
+      'bespokeTags',
+      'bespokeTheme',
+      'bespokeContact',
+      'bespokeSolutions',
+      'bespokeCollections',
+      'bespokeCatalogs',
+      'bespokeVideos',
+      'bespokeNews'
     ];
     const hasBespokePayload = bespokeFields.some((field) => req.body[field] !== undefined)
       || req.files?.bespokeHeroImage
@@ -117,6 +159,83 @@ const updatebrand = async (req, res) => {
       if (req.body.bespokeSelectedContractorIds !== undefined) bespokePage.selectedContractorIds = normalizeObjectIdArray(req.body.bespokeSelectedContractorIds);
       if (req.body.bespokeReviews !== undefined) bespokePage.reviews = normalizeReviews(req.body.bespokeReviews);
       if (req.body.bespokeIsPublished !== undefined) bespokePage.isPublished = req.body.bespokeIsPublished === true || req.body.bespokeIsPublished === 'true' || req.body.bespokeIsPublished === '1';
+      if (req.body.bespokeTags !== undefined) bespokePage.tags = normalizeStringArray(req.body.bespokeTags);
+      if (req.body.bespokeTheme !== undefined) bespokePage.theme = normalizePlainObject(req.body.bespokeTheme);
+      if (req.body.bespokeContact !== undefined) bespokePage.contact = normalizePlainObject(req.body.bespokeContact);
+      if (req.body.bespokeSolutions !== undefined) {
+        bespokePage.solutions = normalizeEditableArray(req.body.bespokeSolutions, (item) => {
+          const title = String(item?.title || '').trim();
+          if (!title) return null;
+          return {
+            title,
+            image: item?.image || '',
+            text: String(item?.text || '').trim()
+          };
+        });
+      }
+      if (req.body.bespokeCollections !== undefined) {
+        bespokePage.collections = normalizeEditableArray(req.body.bespokeCollections, (item) => {
+          const title = String(item?.title || '').trim();
+          if (!title) return null;
+          return {
+            title,
+            image: item?.image || '',
+            materials: normalizeStringArray(item?.materials || []),
+            variants: normalizeStringArray(item?.variants || []),
+            specs: normalizeStringArray(item?.specs || [])
+          };
+        });
+      }
+      if (req.body.bespokeCatalogs !== undefined) {
+        bespokePage.catalogs = normalizeEditableArray(req.body.bespokeCatalogs, (item) => {
+          const title = String(item?.title || '').trim();
+          if (!title) return null;
+          return {
+            title,
+            year: String(item?.year || '').trim(),
+            pages: Number(item?.pages) || 0,
+            featured: item?.featured === true || item?.featured === 'true',
+            cover: item?.cover || '',
+            file: item?.file || null,
+            url: String(item?.url || '').trim()
+          };
+        });
+      }
+      if (req.body.bespokeVideos !== undefined) {
+        bespokePage.videos = normalizeEditableArray(req.body.bespokeVideos, (item) => {
+          const title = String(item?.title || '').trim();
+          if (!title) return null;
+          return {
+            title,
+            provider: String(item?.provider || 'youtube').trim(),
+            videoId: String(item?.videoId || '').trim(),
+            poster: item?.poster || '',
+            url: String(item?.url || '').trim()
+          };
+        });
+      }
+      if (req.body.bespokeNews !== undefined) {
+        bespokePage.news = normalizeEditableArray(req.body.bespokeNews, (item) => {
+          const title = String(item?.title || '').trim();
+          if (!title) return null;
+          return {
+            title,
+            date: String(item?.date || '').trim(),
+            readTime: String(item?.readTime || '').trim(),
+            image: item?.image || '',
+            excerpt: String(item?.excerpt || '').trim(),
+            body: String(item?.body || '').trim()
+          };
+        });
+      }
+
+      const bespokeFiles = req.files || {};
+      bespokePage.solutions = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeSolutionImage', bespokePage.solutions || [], 'image', currentBespoke.solutions || [], 'image', currentUserId);
+      bespokePage.collections = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeCollectionImage', bespokePage.collections || [], 'image', currentBespoke.collections || [], 'image', currentUserId);
+      bespokePage.catalogs = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeCatalogCover', bespokePage.catalogs || [], 'cover', currentBespoke.catalogs || [], 'cover', currentUserId);
+      bespokePage.catalogs = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeCatalogFile', bespokePage.catalogs || [], 'file', currentBespoke.catalogs || [], 'file', currentUserId);
+      bespokePage.videos = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeVideoPoster', bespokePage.videos || [], 'poster', currentBespoke.videos || [], 'poster', currentUserId);
+      bespokePage.news = await uploadIndexedBespokeFiles(bespokeFiles, 'bespokeNewsImage', bespokePage.news || [], 'image', currentBespoke.news || [], 'image', currentUserId);
 
       const heroImage = await uploadSingleBespokeImage('bespokeHeroImage', currentBespoke.heroImage);
       if (heroImage !== undefined) bespokePage.heroImage = heroImage;
