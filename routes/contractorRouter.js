@@ -9,6 +9,7 @@ import uploadContractorImage from "../controllers/contractor/uploadContractorIma
 import createPortfolioItem from "../controllers/contractor/createPortfolioItem.js";
 import updatePortfolioItem from "../controllers/contractor/updatePortfolioItem.js";
 import deletePortfolioItem from "../controllers/contractor/deletePortfolioItem.js";
+import getPortfolioItemDetails from "../controllers/contractor/getPortfolioItemDetails.js";
 import upload from "../middlewares/imageUploader.js";
 
 const router = express.Router();
@@ -16,6 +17,7 @@ const router = express.Router();
 // Public routes
 router.get("/", getContractorList);
 router.get("/:slug", getContractorDetails);
+router.get("/portfolio/:itemId", getPortfolioItemDetails);
 router.post("/leads", createContractorLead);
 
 // Protected/Private routes

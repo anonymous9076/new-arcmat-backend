@@ -33,11 +33,11 @@ const contractorSchema = new mongoose.Schema(
         
         // Categorization
         categoryId: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: mongoose.Schema.Types.Mixed,
             ref: 'Category'
         },
         subcategoryId: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: mongoose.Schema.Types.Mixed,
             ref: 'Category'
         },
         serviceIds: [{
