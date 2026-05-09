@@ -22,6 +22,7 @@ const getBrandList = async (req, res) => {
             subcategoryId,
             subsubcategoryId
         } = req.query;
+        console.log("DEBUG: req.query ->", JSON.stringify(req.query));
 
         if (type === "distinct") {
             // Gets distinct brand names currently assigned to products
@@ -47,16 +48,19 @@ const getBrandList = async (req, res) => {
             query.showOnHomepage = parseInt(showOnHomepage);
         }
         if (ownerType === 'brand') {
-            query.ownerType = { $ne: 'custom_maker' };
+            // query.ownerType = { $in: ['brand', null, undefined] }; 
+            // Temporarily disabling this to see if any brands appear
+        } else if (ownerType === 'custom_maker') {
+            query.ownerType = 'custom_maker';
         } else if (ownerType) {
             query.ownerType = ownerType;
         }
 
-        if (excludeCustomMakers === 'true') {
-            query.ownerType = { $ne: 'custom_maker' };
-        }
+        // if (excludeCustomMakers === 'true') {
+        //     query.ownerType = { $ne: 'custom_maker' };
+        // }
 
-        console.log("Brand List Query:", JSON.stringify(query, null, 2));
+        console.log("DEBUG: Brand List Query ->", JSON.stringify(query));
 
         // Date range filtering
         if (startDate || endDate) {
