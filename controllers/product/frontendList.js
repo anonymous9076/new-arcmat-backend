@@ -160,6 +160,44 @@ const frontendList = async (req, res) => {
         }
 
         // -------------------------------------------------------------------------
+        // Dynamic Attribute Filtering (attr_ prefix)
+        // -------------------------------------------------------------------------
+        const attributeFilters = Object.keys(req.query)
+            .filter(key => key.startsWith('attr_'))
+            .reduce((obj, key) => {
+                const attrName = key.replace('attr_', '');
+                const values = req.query[key].split(',').filter(Boolean);
+                if (values.length > 0) {
+                    obj[attrName] = values;
+                }
+                return obj;
+            }, {});
+
+        if (Object.keys(attributeFilters).length > 0) {
+            const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const attrMatchQueries = Object.entries(attributeFilters).map(([key, values]) => ({
+                dynamicAttributes: {
+                    $elemMatch: {
+                        key: { $regex: new RegExp(`^${escapeRegex(key.trim())}$`, 'i') },
+                        value: { $in: values.map(v => new RegExp(`^${escapeRegex(v.trim())}$`, 'i')) }
+                    }
+                }
+            }));
+
+            const matchingVariantIds = await variant.find({ $and: attrMatchQueries }).distinct('productId');
+            
+            if (query._id) {
+                if (query._id.$in) {
+                    query._id.$in = query._id.$in.filter(id => 
+                        matchingVariantIds.some(vid => vid.toString() === id.toString())
+                    );
+                }
+            } else {
+                query._id = { $in: matchingVariantIds };
+            }
+        }
+
+        // -------------------------------------------------------------------------
         // Retailer-Specific Filtering (Only products they deal with or only overrides)
         // -------------------------------------------------------------------------
         if (retailerId) {
@@ -187,16 +225,32 @@ const frontendList = async (req, res) => {
             // Global filter: show retailer-backed brand products plus direct custom-maker products.
             const RetailerProduct = (await import('../../models/retailerproduct.js')).default;
             const Usertable = (await import('../../models/user.js')).default;
-            const [overriddenProductIds, customMakerIds] = await Promise.all([
+            
+            // Fetch IDs for overrides, custom maker users, AND custom maker brands
+            const [overriddenProductIds, customMakerUserIds, customMakerBrandIds] = await Promise.all([
                 RetailerProduct.find({ isActive: true }).distinct('productId'),
-                Usertable.find({ role: 'custom_maker', isActive: 1 }).distinct('_id')
+                Usertable.find({ role: 'custom_maker', isActive: 1 }).distinct('_id'),
+                Brand.find({ ownerType: 'custom_maker', isActive: 1 }).distinct('_id')
             ]);
-            const customMakerProductIds = customMakerIds.length > 0
-                ? await product.find({ createdBy: { $in: customMakerIds } }).distinct('_id')
-                : [];
-            const directlyVisibleProductIds = [...overriddenProductIds, ...customMakerProductIds];
+
+            const visibilityFilter = {
+                $or: [
+                    { _id: { $in: overriddenProductIds } },
+                    { createdBy: { $in: customMakerUserIds } },
+                    { brand: { $in: customMakerBrandIds } }
+                ]
+            };
 
             if (query._id) {
+                // Intersect with existing _id filter (from variants)
+                const customMakerProductIds = await product.find({
+                    $or: [
+                        { createdBy: { $in: customMakerUserIds } },
+                        { brand: { $in: customMakerBrandIds } }
+                    ]
+                }).distinct('_id');
+                const directlyVisibleProductIds = [...overriddenProductIds, ...customMakerProductIds];
+
                 if (query._id.$in) {
                     query._id.$in = query._id.$in.filter(id =>
                         directlyVisibleProductIds.some(oid => oid.toString() === id.toString())
@@ -210,12 +264,7 @@ const frontendList = async (req, res) => {
                 }
             } else {
                 query.$and = query.$and || [];
-                query.$and.push({
-                    $or: [
-                        { _id: { $in: overriddenProductIds } },
-                        { createdBy: { $in: customMakerIds } }
-                    ]
-                });
+                query.$and.push(visibilityFilter);
             }
         }
         // -------------------------------------------------------------------------
@@ -280,7 +329,7 @@ const frontendList = async (req, res) => {
             .populate('categoryId', 'name')
             .populate('subcategoryId', 'name')
             .populate('subsubcategoryId', 'name')
-            .populate('brand', 'name')
+            .populate('brand', 'name ownerType bespokePage.isPublished')
             .populate('createdBy', 'name email role')
             .lean();
 
@@ -328,6 +377,39 @@ const frontendList = async (req, res) => {
             product.countDocuments({ ...statsQuery, status: 0 })
         ]);
 
+        // 5.6 Calculate Metadata for Filters (sidebar)
+        // We use the full results scope (before pagination) to find available options
+        const metadataQuery = { ...query };
+        const allMatchingProductIds = await product.find(metadataQuery).distinct('_id');
+        const allMetadataVariants = await variant.find({ productId: { $in: allMatchingProductIds } }).select('selling_price color dynamicAttributes').lean();
+
+        const prices = allMetadataVariants.map(v => v.selling_price).filter(p => p !== undefined && p > 0);
+        const colors = allMetadataVariants.map(v => v.color).filter(Boolean);
+        
+        const dynamicAttrMap = {};
+        allMetadataVariants.forEach(v => {
+            if (v.dynamicAttributes) {
+                v.dynamicAttributes.forEach(attr => {
+                    if (!dynamicAttrMap[attr.key]) {
+                        dynamicAttrMap[attr.key] = new Set();
+                    }
+                    dynamicAttrMap[attr.key].add(attr.value);
+                });
+            }
+        });
+
+        const availableAttributes = Object.entries(dynamicAttrMap).map(([key, valueSet]) => ({
+            key,
+            values: Array.from(valueSet).sort()
+        }));
+
+        const metadata = {
+            minPrice: prices.length > 0 ? Math.min(...prices) : 0,
+            maxPrice: prices.length > 0 ? Math.max(...prices) : 500000,
+            availableColors: Array.from(new Set(colors)).sort(),
+            availableAttributes
+        };
+
         return success(res, {
             status: "success",
             data: productsWithVariants,
@@ -344,7 +426,8 @@ const frontendList = async (req, res) => {
                 inactiveCount,
                 totalCount: activeCount + inactiveCount
             },
-            categoryCounts
+            categoryCounts,
+            metadata
         }, 200);
 
     } catch (error) {
