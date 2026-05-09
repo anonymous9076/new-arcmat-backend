@@ -46,10 +46,17 @@ const getBrandList = async (req, res) => {
         if (showOnHomepage !== undefined && showOnHomepage !== "") {
             query.showOnHomepage = parseInt(showOnHomepage);
         }
-        if (ownerType) query.ownerType = ownerType;
+        if (ownerType === 'brand') {
+            query.ownerType = { $ne: 'custom_maker' };
+        } else if (ownerType) {
+            query.ownerType = ownerType;
+        }
+
         if (excludeCustomMakers === 'true') {
             query.ownerType = { $ne: 'custom_maker' };
         }
+
+        console.log("Brand List Query:", JSON.stringify(query, null, 2));
 
         // Date range filtering
         if (startDate || endDate) {
