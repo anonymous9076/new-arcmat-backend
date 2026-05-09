@@ -12,6 +12,7 @@ import {
   decideContractorBespokeRequest,
   listContractorBespokeRequests
 } from "../controllers/brand/contractorBespokeRequests.js";
+import { createBrandLead, listBrandLeads } from "../controllers/brand/brandLeads.js";
 import authenticateToken from "../middlewares/verifyToken.js";
 
 const router = express.Router()
@@ -28,18 +29,20 @@ const bespokeCardFileFields = Array.from({ length: 50 }, (_, index) => ([
   { name: `bespokeProjectGallery_${index}_3`, maxCount: 1 },
 ])).flat();
 
-router.post('/', authenticateToken(['admin', 'brand']), upload.brand.fields([
+router.post('/', authenticateToken(['admin', 'brand', 'custom_maker']), upload.brand.fields([
   { name: 'brand_image', maxCount: 1 },
 ]), createbrand);
 router.get('/', getBrandList);
 router.get('/products/:name', productbybrand);
-router.get('/:id/bespoke-options', authenticateToken(['admin', 'brand']), getBespokeOptions);
+router.get('/:id/bespoke-options', authenticateToken(['admin', 'brand', 'custom_maker']), getBespokeOptions);
 router.post('/:id/contractor-requests', authenticateToken(['contractor']), createContractorBespokeRequest);
-router.get('/:id/contractor-requests', authenticateToken(['admin', 'brand', 'contractor']), listContractorBespokeRequests);
-router.patch('/:id/contractor-requests/:requestId', authenticateToken(['admin', 'brand']), decideContractorBespokeRequest);
+router.get('/:id/contractor-requests', authenticateToken(['admin', 'brand', 'custom_maker', 'contractor']), listContractorBespokeRequests);
+router.patch('/:id/contractor-requests/:requestId', authenticateToken(['admin', 'brand', 'custom_maker']), decideContractorBespokeRequest);
+router.post('/:id/queries', createBrandLead);
+router.get('/queries/all', authenticateToken(['admin', 'brand', 'custom_maker']), listBrandLeads);
 router.get('/:id', brandsingle);
 router.delete('/:id', authenticateToken(['admin']), deletebrand);
-router.patch('/:id', authenticateToken(['admin', 'brand']), upload.brand.fields([
+router.patch('/:id', authenticateToken(['admin', 'brand', 'custom_maker']), upload.brand.fields([
   { name: 'brand_image', maxCount: 1 },
   { name: 'bespokeHeroImage', maxCount: 1 },
   { name: 'bespokeCustomImage', maxCount: 1 },

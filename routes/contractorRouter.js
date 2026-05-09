@@ -10,6 +10,8 @@ import createPortfolioItem from "../controllers/contractor/createPortfolioItem.j
 import updatePortfolioItem from "../controllers/contractor/updatePortfolioItem.js";
 import deletePortfolioItem from "../controllers/contractor/deletePortfolioItem.js";
 import getPortfolioItemDetails from "../controllers/contractor/getPortfolioItemDetails.js";
+import getContractorLeads from "../controllers/contractor/getContractorLeads.js";
+import getContractorStats from "../controllers/contractor/getContractorStats.js";
 import upload from "../middlewares/imageUploader.js";
 
 const router = express.Router();
@@ -22,10 +24,12 @@ router.post("/leads", createContractorLead);
 
 // Protected/Private routes
 router.get("/my-profile/:userId", getMyProfile);
+router.get("/stats/:userId", getContractorStats);
 router.post("/profile", createContractorProfile);
 router.patch("/profile/:id", updateContractorProfile);
 router.post("/upload", upload.single("image"), uploadContractorImage);
 router.post("/:contractorId/portfolio", upload.array("files", 12), createPortfolioItem);
+router.get("/:contractorId/leads", getContractorLeads);
 router.patch("/portfolio/:itemId", upload.array("files", 12), updatePortfolioItem);
 router.delete("/portfolio/:itemId", deletePortfolioItem);
 

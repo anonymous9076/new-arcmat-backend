@@ -184,24 +184,38 @@ const frontendList = async (req, res) => {
                 query._id = { $in: overriddenProductIds };
             }
         } else if (onlyRetailerProducts === 'true') {
-            // Global filter: only show products that have at least one retailer override
+            // Global filter: show retailer-backed brand products plus direct custom-maker products.
             const RetailerProduct = (await import('../../models/retailerproduct.js')).default;
-            const overriddenProductIds = await RetailerProduct.find({ isActive: true }).distinct('productId');
+            const Usertable = (await import('../../models/user.js')).default;
+            const [overriddenProductIds, customMakerIds] = await Promise.all([
+                RetailerProduct.find({ isActive: true }).distinct('productId'),
+                Usertable.find({ role: 'custom_maker', isActive: 1 }).distinct('_id')
+            ]);
+            const customMakerProductIds = customMakerIds.length > 0
+                ? await product.find({ createdBy: { $in: customMakerIds } }).distinct('_id')
+                : [];
+            const directlyVisibleProductIds = [...overriddenProductIds, ...customMakerProductIds];
 
             if (query._id) {
                 if (query._id.$in) {
                     query._id.$in = query._id.$in.filter(id =>
-                        overriddenProductIds.some(oid => oid.toString() === id.toString())
+                        directlyVisibleProductIds.some(oid => oid.toString() === id.toString())
                     );
                 } else {
                     query._id = {
                         $in: [query._id].filter(id =>
-                            overriddenProductIds.some(oid => oid.toString() === id.toString())
+                            directlyVisibleProductIds.some(oid => oid.toString() === id.toString())
                         )
                     };
                 }
             } else {
-                query._id = { $in: overriddenProductIds };
+                query.$and = query.$and || [];
+                query.$and.push({
+                    $or: [
+                        { _id: { $in: overriddenProductIds } },
+                        { createdBy: { $in: customMakerIds } }
+                    ]
+                });
             }
         }
         // -------------------------------------------------------------------------

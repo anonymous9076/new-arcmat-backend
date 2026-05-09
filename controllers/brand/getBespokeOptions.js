@@ -10,7 +10,7 @@ const getBespokeOptions = async (req, res) => {
     if (!brand) return fail(res, new Error('brand not found'), 404);
 
     const currentUserId = req.user?.id || req.user?._id;
-    if (req.user?.role === 'brand' && String(brand.userId) !== String(currentUserId)) {
+        if ((req.user?.role === 'brand' || req.user?.role === 'custom_maker') && String(brand.userId) !== String(currentUserId)) {
       return fail(res, new Error('You can only edit your own bespoke page'), 403);
     }
 

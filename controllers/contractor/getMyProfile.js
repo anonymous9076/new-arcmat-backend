@@ -10,9 +10,7 @@ const getMyProfile = async (req, res) => {
             return fail(res, "User ID is required", 400);
         }
 
-        const profile = await Contractor.findOne({ userId })
-            .populate('categoryId', 'name')
-            .populate('subcategoryId', 'name');
+        const profile = await Contractor.findOne({ userId });
 
         if (!profile) {
             return success(res, { profile: null, message: "No profile found for this user" });

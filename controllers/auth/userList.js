@@ -24,7 +24,7 @@ const userlist = async (req, res) => {
     if (isEmailVerified !== undefined) query.isEmailVerified = parseInt(isEmailVerified);
     if (role) {
       if (role === 'vendor' || role === 'brand') {
-        query.role = { $in: ['vendor', 'brand'] };
+        query.role = { $in: ['vendor', 'brand', 'custom_maker'] };
       } else {
         query.role = role;
       }

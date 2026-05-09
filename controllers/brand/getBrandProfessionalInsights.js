@@ -15,7 +15,7 @@ const getBrandProfessionalInsights = async (req, res) => {
     try {
         let brandId = req.query.brandId;
 
-        if (req.user.role === 'brand' || req.user.role === 'vendor') {
+        if (req.user.role === 'brand' || req.user.role === 'custom_maker' || req.user.role === 'vendor') {
             const rawId = req.user.selectedBrands && req.user.selectedBrands[0];
             brandId = (rawId?._id || rawId?.id || rawId);
         }

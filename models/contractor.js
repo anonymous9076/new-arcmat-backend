@@ -113,6 +113,7 @@ const contractorSchema = new mongoose.Schema(
             workingHours: String
         },
         responseTime: String,
+        views: { type: Number, default: 0 },
         
         // Marketplace Status
         status: {

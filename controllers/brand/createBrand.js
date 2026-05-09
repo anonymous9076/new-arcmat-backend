@@ -26,6 +26,9 @@ const createbrand = async (req, res) => {
 
     // Auto-assign userId from authenticated user if available
     const userId = req.user ? req.user.id : req.body.userId;
+    const ownerType = req.user?.role === 'custom_maker' || req.body.ownerType === 'custom_maker'
+      ? 'custom_maker'
+      : 'brand';
 
     const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -39,6 +42,7 @@ const createbrand = async (req, res) => {
       isActive: isActive !== undefined ? Number(isActive) : 1,
       showOnHomepage: showOnHomepage !== undefined ? Number(showOnHomepage) : 0,
       userId: userId || undefined,
+      ownerType,
       shippingAddress: shippingAddress || undefined,
       billingAddress: billingAddress || undefined,
     };

@@ -163,3 +163,189 @@ export const sendProductLeadEmail = async (leadData) => {
         return { success: false, error: error.message };
     }
 };
+
+export const sendBrandQueryEmail = async (leadData) => {
+    const transporter = nodemailer.createTransport({
+        service: process.env.SMPT_SERVICE || 'gmail',
+        host: process.env.SMPT_HOST || 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: process.env.SMPT_MAIL,
+            pass: process.env.SMPT_PASSWORD
+        },
+    });
+
+    const mailOptions = {
+        from: `"Arcmat Brand Inquiries" <${process.env.SMPT_MAIL}>`,
+        to: [leadData.brandEmail, process.env.SMPT_MAIL].filter(Boolean), // Send to brand and admin
+        subject: `New Inquiry for ${leadData.brandName} from ${leadData.name}`,
+        html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 40px; border: 1px solid #f0f0f0; border-radius: 16px; background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #2d3142; margin: 0; font-size: 24px; font-weight: 800;">ARCMAT</h1>
+                </div>
+                <div style="background-color: #fef7f2; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+                    <h2 style="color: #2d3142; margin-top: 0; font-size: 20px;">New Brand Inquiry</h2>
+                    <p style="color: #4a4a4a; line-height: 1.6; font-size: 16px;">
+                        Hello, you have received a new inquiry for <strong>${leadData.brandName}</strong>.
+                    </p>
+                    
+                    <hr style="border: 0; border-top: 1px solid #ead4ce; margin: 20px 0;">
+                    
+                    <h3 style="color: #2d3142; font-size: 16px; margin-bottom: 10px;">Inquiry Details:</h3>
+                    <table style="width: 100%; font-size: 14px; color: #4a4a4a; line-height: 2;">
+                        <tr><td style="width: 100px; font-weight: bold;">Name:</td><td>${leadData.name}</td></tr>
+                        <tr><td style="font-weight: bold;">Email:</td><td>${leadData.email}</td></tr>
+                        <tr><td style="font-weight: bold;">Phone:</td><td>${leadData.phone}</td></tr>
+                        <tr><td style="font-weight: bold;">Location:</td><td>${leadData.location}</td></tr>
+                    </table>
+                    
+                    <h3 style="color: #2d3142; font-size: 16px; margin-top: 20px; margin-bottom: 10px;">Message:</h3>
+                    <div style="background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #ead4ce; color: #4a4a4a; font-style: italic; font-size: 14px;">
+                        ${leadData.query}
+                    </div>
+                </div>
+                <p style="color: #888888; font-size: 12px; text-align: center;">
+                    This inquiry was submitted through the Arcmat Bespoke Brand Showcase.
+                    <br>
+                    &copy; ${new Date().getFullYear()} Arcmat. All rights reserved.
+                </p>
+            </div>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending brand inquiry email:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const sendContractorRequestEmail = async (brandData, contractorData, message) => {
+    const transporter = nodemailer.createTransport({
+        service: process.env.SMPT_SERVICE || 'gmail',
+        host: process.env.SMPT_HOST || 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: process.env.SMPT_MAIL,
+            pass: process.env.SMPT_PASSWORD
+        },
+    });
+
+    const mailOptions = {
+        from: `"Arcmat Network" <${process.env.SMPT_MAIL}>`,
+        to: brandData.email,
+        subject: `New Bespoke Network Request from ${contractorData.businessName}`,
+        html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 40px; border: 1px solid #f0f0f0; border-radius: 16px; background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #2d3142; margin: 0; font-size: 24px; font-weight: 800;">ARCMAT</h1>
+                </div>
+                <div style="background-color: #fef7f2; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+                    <h2 style="color: #2d3142; margin-top: 0; font-size: 20px;">New Network Request</h2>
+                    <p style="color: #4a4a4a; line-height: 1.6; font-size: 16px;">
+                        Hello ${brandData.name},
+                    </p>
+                    <p style="color: #4a4a4a; line-height: 1.6; font-size: 16px;">
+                        <strong>${contractorData.businessName}</strong> has requested to be listed on your bespoke page as a trusted contractor.
+                    </p>
+                    
+                    <hr style="border: 0; border-top: 1px solid #ead4ce; margin: 20px 0;">
+                    
+                    <h3 style="color: #2d3142; font-size: 16px; margin-bottom: 10px;">Contractor Details:</h3>
+                    <table style="width: 100%; font-size: 14px; color: #4a4a4a; line-height: 2;">
+                        <tr><td style="width: 100px; font-weight: bold;">Business:</td><td>${contractorData.businessName}</td></tr>
+                        <tr><td style="font-weight: bold;">Location:</td><td>${contractorData.location?.city || 'N/A'}, ${contractorData.location?.country || 'India'}</td></tr>
+                        <tr><td style="font-weight: bold;">Experience:</td><td>${contractorData.experienceYears ? contractorData.experienceYears + ' years' : 'N/A'}</td></tr>
+                    </table>
+                    
+                    <h3 style="color: #2d3142; font-size: 16px; margin-top: 20px; margin-bottom: 10px;">Message:</h3>
+                    <div style="background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #ead4ce; color: #4a4a4a; font-style: italic; font-size: 14px;">
+                        ${message || 'No additional message provided.'}
+                    </div>
+
+                    <div style="text-align: center; margin: 35px 0;">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/bespoke" style="background-color: #d9a88a; color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(217, 168, 138, 0.2);">
+                            Review Request
+                        </a>
+                    </div>
+                </div>
+                <p style="color: #888888; font-size: 12px; text-align: center;">
+                    &copy; ${new Date().getFullYear()} Arcmat. All rights reserved.
+                </p>
+            </div>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending contractor request email:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const sendContractorDecisionEmail = async (contractorEmail, contractorName, brandName, status, brandNote) => {
+    const transporter = nodemailer.createTransport({
+        service: process.env.SMPT_SERVICE || 'gmail',
+        host: process.env.SMPT_HOST || 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: process.env.SMPT_MAIL,
+            pass: process.env.SMPT_PASSWORD
+        },
+    });
+
+    const isApproved = status === 'approved';
+    const statusText = isApproved ? 'Approved' : 'Declined';
+    const statusColor = isApproved ? '#4CAF50' : '#F44336';
+    
+    const mailOptions = {
+        from: `"Arcmat Network" <${process.env.SMPT_MAIL}>`,
+        to: contractorEmail,
+        subject: `Your Network Request with ${brandName} has been ${statusText}`,
+        html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 40px; border: 1px solid #f0f0f0; border-radius: 16px; background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #2d3142; margin: 0; font-size: 24px; font-weight: 800;">ARCMAT</h1>
+                </div>
+                <div style="background-color: #fef7f2; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+                    <h2 style="color: #2d3142; margin-top: 0; font-size: 20px;">Request Update</h2>
+                    <p style="color: #4a4a4a; line-height: 1.6; font-size: 16px;">
+                        Hello ${contractorName},
+                    </p>
+                    <p style="color: #4a4a4a; line-height: 1.6; font-size: 16px;">
+                        Your request to be featured on <strong>${brandName}</strong>'s bespoke page has been <strong style="color: ${statusColor};">${statusText.toLowerCase()}</strong>.
+                    </p>
+                    
+                    ${brandNote ? '<h3 style="color: #2d3142; font-size: 16px; margin-top: 20px; margin-bottom: 10px;">Note from the Brand:</h3><div style="background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #ead4ce; color: #4a4a4a; font-style: italic; font-size: 14px;">' + brandNote + '</div>' : ''}
+                    
+                    ${isApproved ? '<p style="color: #4a4a4a; line-height: 1.6; font-size: 16px; margin-top: 20px;">You will now appear as a trusted contractor on their bespoke page!</p>' : ''}
+
+                    <div style="text-align: center; margin: 35px 0;">
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/contractor/brand-requests" style="background-color: #d9a88a; color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(217, 168, 138, 0.2);">
+                            View My Requests
+                        </a>
+                    </div>
+                </div>
+                <p style="color: #888888; font-size: 12px; text-align: center;">
+                    &copy; ${new Date().getFullYear()} Arcmat. All rights reserved.
+                </p>
+            </div>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending contractor decision email:', error);
+        return { success: false, error: error.message };
+    }
+};

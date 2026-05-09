@@ -26,21 +26,20 @@ const router = express.Router();
 const memoryUpload = multer({ storage: multer.memoryStorage() });
 
 router.get("/", frontendList);
-router.get("/export-data", authenticateToken(['admin', 'brand']), exportProductData);
-router.get("/:id", validateObjectId, checkuser, singleProduct);
-router.post("/", authenticateToken(['brand']), upload.productTemp.array("product_images", 20), createproduct);
-router.patch("/:id", validateObjectId, authenticateToken(['admin', 'brand']), upload.productTemp.array("product_images", 20), updateproduct);
-router.delete("/:id", validateObjectId, authenticateToken(['admin', 'brand']), deleteproduct);
-router.post("/bulk-import", authenticateToken(['brand']), excelUploader.single("file"), bulkimport);
-router.post("/bulk-image-upload", authenticateToken(['brand']), memoryUpload.single("zipFile"), bulkImageUpload);
-router.post("/bulk-activate", authenticateToken(['admin']), bulkActivateProducts);
-router.post("/bulk-delete", authenticateToken(['admin', 'brand', 'retailer']), bulkDeleteProducts);
-router.post("/bulk-approve", authenticateToken(['admin']), bulkApproveProducts);
-router.delete("/bulk-session", authenticateToken(['admin', 'brand']), clearBulkSession);
-
+router.get("/export-data", authenticateToken(['admin', 'brand', 'custom_maker']), exportProductData);
 // Product Leads
 router.post("/submit-lead", checkuser, submitProductLead);
-router.get("/leads/all", authenticateToken(['admin']), getProductLeads);
-router.patch("/leads/:id/status", authenticateToken(['admin']), updateProductLeadStatus);
+router.get("/leads/all", authenticateToken(['admin', 'brand', 'custom_maker']), getProductLeads);
+router.patch("/leads/:id/status", authenticateToken(['admin', 'brand', 'custom_maker']), updateProductLeadStatus);
+router.get("/:id", validateObjectId, checkuser, singleProduct);
+router.post("/", authenticateToken(['brand', 'custom_maker']), upload.productTemp.array("product_images", 20), createproduct);
+router.patch("/:id", validateObjectId, authenticateToken(['admin', 'brand', 'custom_maker']), upload.productTemp.array("product_images", 20), updateproduct);
+router.delete("/:id", validateObjectId, authenticateToken(['admin', 'brand', 'custom_maker']), deleteproduct);
+router.post("/bulk-import", authenticateToken(['brand', 'custom_maker']), excelUploader.single("file"), bulkimport);
+router.post("/bulk-image-upload", authenticateToken(['brand', 'custom_maker']), memoryUpload.single("zipFile"), bulkImageUpload);
+router.post("/bulk-activate", authenticateToken(['admin']), bulkActivateProducts);
+router.post("/bulk-delete", authenticateToken(['admin', 'brand', 'custom_maker', 'retailer']), bulkDeleteProducts);
+router.post("/bulk-approve", authenticateToken(['admin']), bulkApproveProducts);
+router.delete("/bulk-session", authenticateToken(['admin', 'brand', 'custom_maker']), clearBulkSession);
 
 export default router;

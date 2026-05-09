@@ -43,7 +43,6 @@ const getContractorList = async (req, res) => {
         const total = await Contractor.countDocuments(query);
         
         const data = await Contractor.find(query)
-            .populate("categoryId", "name image")
             .populate("userId", "name profile")
             .sort({ isFeatured: -1, isTopRated: -1, createdAt: -1 })
             .skip(skip)

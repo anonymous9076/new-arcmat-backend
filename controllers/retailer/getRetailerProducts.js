@@ -114,14 +114,23 @@ const getRetailerProducts = async (req, res) => {
             }
         }
 
-        if (min_price !== undefined && min_price !== '' || max_price !== undefined && max_price !== '') {
-            retailerQuery.selling_price = {};
-            if (min_price !== undefined && min_price !== '') retailerQuery.selling_price.$gte = parseInt(min_price);
-            if (max_price !== undefined && max_price !== '') retailerQuery.selling_price.$lte = parseInt(max_price);
+        const minP = min_price !== undefined && min_price !== '' ? parseInt(min_price) : 0;
+        const maxP = max_price !== undefined && max_price !== '' ? parseInt(max_price) : 500000;
 
-            if (Object.keys(retailerQuery.selling_price).length === 0) {
-                delete retailerQuery.selling_price;
-            }
+        // Only apply price filter if it's not the default "show all" range (0 to 500k)
+        // AND handle documents missing the selling_price field (Request info products)
+        if (minP > 0 || maxP < 500000) {
+            retailerQuery.$or = [
+                {
+                    selling_price: {
+                        ...(minP > 0 ? { $gte: minP } : {}),
+                        ...(maxP < 500000 ? { $lte: maxP } : {})
+                    }
+                },
+                { selling_price: { $exists: false } },
+                { selling_price: null },
+                { selling_price: 0 }
+            ];
         }
 
         // 2.3 Dynamic Attribute Filters (attr_ prefix)

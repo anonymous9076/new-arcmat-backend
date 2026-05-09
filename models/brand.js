@@ -17,6 +17,12 @@ const brandSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Usertable'
         },
+        ownerType: {
+            type: String,
+            enum: ['brand', 'custom_maker'],
+            default: 'brand',
+            index: true
+        },
         shippingAddress: {
             type: String,
             ref: 'address'

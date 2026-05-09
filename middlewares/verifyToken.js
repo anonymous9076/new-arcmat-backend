@@ -36,8 +36,8 @@ const validateToken = async (req, res, next, allowedRoles) => {
       }
     }
 
-    // Fetch full user for roles that need complex data (brand, retailer)
-    if (req.user.role === "brand" || req.user.role === "retailer") {
+    // Fetch full user for roles that need complex data (brand, custom maker, retailer)
+    if (req.user.role === "brand" || req.user.role === "custom_maker" || req.user.role === "retailer") {
       const user = await Usertable.findById(req.user.id).populate('selectedBrands');
       if (!user) {
         return res.status(401).json({ status: "failed", errors: "Unauthorized: User not found" });

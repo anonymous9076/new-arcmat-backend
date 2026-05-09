@@ -9,8 +9,8 @@ const router = express.Router();
 
 // Brand & Admin routes for analytics
 router.get('/retailer-selection', authenticateToken(['admin']), getRetailerAnalytics);
-router.get('/brand/retailer-selection', authenticateToken(['brand', 'admin', 'vendor']), getBrandRetailerAnalytics);
-router.get('/brand/product-analytics', authenticateToken(['brand', 'admin', 'vendor']), getBrandProductAnalytics);
-router.get('/brand/professional-insights', authenticateToken(['brand', 'admin', 'vendor']), getBrandProfessionalInsights);
+router.get('/brand/retailer-selection', authenticateToken(['brand', 'custom_maker', 'admin', 'vendor']), getBrandRetailerAnalytics);
+router.get('/brand/product-analytics', authenticateToken(['brand', 'custom_maker', 'admin', 'vendor']), getBrandProductAnalytics);
+router.get('/brand/professional-insights', authenticateToken(['brand', 'custom_maker', 'admin', 'vendor']), getBrandProfessionalInsights);
 
 export default router;

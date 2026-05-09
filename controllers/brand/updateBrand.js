@@ -76,8 +76,8 @@ const updatebrand = async (req, res) => {
     if (!existingBrand) return fail(res, new Error('brand not found'), 404);
 
     const currentUserId = req.user?.id || req.user?._id;
-    if (req.user?.role === 'brand' && String(existingBrand.userId) !== String(currentUserId)) {
-      return fail(res, new Error('You can only edit your own brand'), 403);
+    if ((req.user?.role === 'brand' || req.user?.role === 'custom_maker') && String(existingBrand.userId) !== String(currentUserId)) {
+      return fail(res, new Error('You can only edit your own business profile'), 403);
     }
 
     let logo = req.body.logo;
@@ -118,6 +118,7 @@ const updatebrand = async (req, res) => {
     if (isActive !== undefined) updateObj.isActive = Number(isActive);
     if (showOnHomepage !== undefined) updateObj.showOnHomepage = Number(showOnHomepage);
     if (userId !== undefined) updateObj.userId = userId;
+    if (req.user?.role === 'custom_maker') updateObj.ownerType = 'custom_maker';
 
     const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 

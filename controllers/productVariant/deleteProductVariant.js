@@ -15,7 +15,8 @@ const deleteproductvariant = async (req, res) => {
       const parentProduct = await product.findById(existingVariant.productId).select('createdBy brand').lean();
       const isAdmin = req.user.role === 'admin';
       const isCreator = parentProduct && parentProduct.createdBy && parentProduct.createdBy.toString() === req.user.id.toString();
-      const isBrandOwner = req.user.selectedBrands && req.user.selectedBrands.includes(parentProduct?.brand?.toString());
+      const selectedBrandIds = (req.user.selectedBrands || []).map((brand) => (brand?._id || brand?.id || brand).toString());
+      const isBrandOwner = selectedBrandIds.includes(parentProduct?.brand?.toString());
 
       if (!isAdmin && !isCreator && !isBrandOwner) {
         return fail(res, new Error('You do not have permission to delete this variant'), 403);

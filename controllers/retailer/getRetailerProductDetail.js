@@ -1,5 +1,7 @@
 import RetailerProduct from "../../models/retailerproduct.js";
 import wishlist from "../../models/wishlist.js";
+import Product from "../../models/product.js";
+import variant from "../../models/productVariant.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
 
 /**
@@ -29,7 +31,64 @@ const getRetailerProductDetail = async (req, res) => {
             .lean();
 
         if (!inventoryEntries || inventoryEntries.length === 0) {
-            return fail(res, new Error("Product not available in retailer inventory"), 404);
+            if (req.user?.role === 'retailer') {
+                return fail(res, new Error("Product not available in retailer inventory"), 404);
+            }
+
+            const directProduct = await Product.findById(productId)
+                .populate('brand', 'name logo')
+                .populate('categoryId', 'name')
+                .populate('subcategoryId', 'name')
+                .populate('subsubcategoryId', 'name')
+                .populate('createdBy', 'name email role')
+                .lean();
+
+            if (!directProduct || directProduct.createdBy?.role !== 'custom_maker') {
+                return fail(res, new Error("Product not available in retailer inventory"), 404);
+            }
+
+            const user_id = req.user && req.user !== "not_login" ? (req.user.id || req.user._id) : null;
+            const productVariants = await variant.find({ productId, status: 1 }).lean();
+            const variantIds = productVariants.map(v => v._id);
+            const [productWishlistEntry, variantWishlistEntries] = await Promise.all([
+                user_id ? wishlist.findOne({ user_id, product_id: productId }) : null,
+                user_id ? wishlist.find({ user_id, product_variant_id: { $in: variantIds } }) : []
+            ]);
+
+            const variantWishlistMap = new Map(
+                variantWishlistEntries.map((entry) => [entry.product_variant_id.toString(), true])
+            );
+
+            const variantsWithDirectPricing = productVariants.map(v => ({
+                ...v,
+                isDirectCustomMaker: true,
+                isRetailerManaged: false,
+                wishlist_status: variantWishlistMap.has(v._id.toString())
+            }));
+            const prices = variantsWithDirectPricing.map(v => v.selling_price).filter(p => p !== undefined);
+            const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+            const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+            const totalStock = variantsWithDirectPricing.reduce((sum, v) => sum + (v.stock || 0), 0);
+
+            return success(res, {
+                status: "successfully",
+                data: {
+                    ...directProduct,
+                    variants: variantsWithDirectPricing,
+                    minPrice,
+                    maxPrice,
+                    totalStock,
+                    selling_price: minPrice,
+                    wishlist_status: !!productWishlistEntry,
+                    isDirectCustomMaker: true
+                },
+                parentcategory: directProduct.categoryId ? [directProduct.categoryId] : [],
+                childcategory: directProduct.subcategoryId ? [directProduct.subcategoryId] : [],
+                subsubcategory: directProduct.subsubcategoryId ? [directProduct.subsubcategoryId] : [],
+                productvariant: variantsWithDirectPricing,
+                slug: directProduct.product_name ? directProduct.product_name.replace(/\s/g, "-").toLowerCase() : "",
+                isRetailerDetail: false
+            }, 200);
         }
 
         // The root product info is the same for all entries

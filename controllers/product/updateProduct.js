@@ -23,7 +23,8 @@ const updateproduct = async (req, res) => {
     if (req.user && req.user.id) {
       const isAdmin = req.user.role === 'admin';
       const isCreator = existingProduct.createdBy && existingProduct.createdBy.toString() === req.user.id.toString();
-      const isBrandOwner = req.user.selectedBrands && req.user.selectedBrands.includes(existingProduct.brand?.toString());
+      const selectedBrandIds = (req.user.selectedBrands || []).map((brand) => (brand?._id || brand?.id || brand).toString());
+      const isBrandOwner = selectedBrandIds.includes(existingProduct.brand?.toString());
 
       if (!isAdmin && !isCreator && !isBrandOwner) {
         return fail(res, new Error('You do not have permission to update this product'), 403);

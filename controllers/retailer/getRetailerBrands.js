@@ -18,7 +18,7 @@ const getRetailerBrands = async (req, res) => {
             .select('selectedBrands')
             .populate({
                 path: 'selectedBrands',
-                select: 'name logo description status' // Adjust fields based on Brand model
+                select: 'name logo description status ownerType' // Adjust fields based on Brand model
             })
             .lean();
 
@@ -26,7 +26,7 @@ const getRetailerBrands = async (req, res) => {
             return fail(res, new Error('Retailer not found'), 404);
         }
 
-        const brands = (retailer.selectedBrands || []).filter(b => b !== null);
+        const brands = (retailer.selectedBrands || []).filter(b => b !== null && b.ownerType !== 'custom_maker');
 
         const uniqueBrandsMap = new Map();
         brands.forEach(brand => {

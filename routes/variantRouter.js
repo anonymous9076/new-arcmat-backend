@@ -12,12 +12,12 @@ import authenticateToken from "../middlewares/verifyToken.js";
 const router = express.Router();
 
 router.post(
-  "/", authenticateToken(['brand']),
+  "/", authenticateToken(['brand', 'custom_maker']),
   upload.variantTemp.array("variant_images", 5),
   createvariant
 );
 router.patch(
-  "/:id", authenticateToken(['admin', 'brand']),
+  "/:id", authenticateToken(['admin', 'brand', 'custom_maker']),
   upload.variantTemp.array("variant_images", 5),
   updateproductvariant
 );
@@ -25,6 +25,6 @@ router.get("/", frontend_variant_list);
 router.get("/id/:id", productvariantlist);
 router.get("/:id", singleproductvariant);
 router.get('/filter/:parentid', frontend_singleproductvariant)
-router.delete("/:id", authenticateToken(['admin', 'brand']), deleteproductvariant);
+router.delete("/:id", authenticateToken(['admin', 'brand', 'custom_maker']), deleteproductvariant);
 
 export default router;

@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import dns from "dns";
+
+// Force Google DNS to resolve MongoDB SRV records (fixes ECONNREFUSED on some networks)
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 dotenv.config();
 
 // Flexible check for environment variable casing (essential for Vercel/Linux)
@@ -25,6 +30,7 @@ async function connectdb() {
     cached.promise = mongoose.connect(MONGO_URI, {
       bufferCommands: false,
       serverSelectionTimeoutMS: 5000,
+      family: 4,
     });
   }
 

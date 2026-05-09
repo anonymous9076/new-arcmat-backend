@@ -392,7 +392,7 @@ const bulkimport = async (req, res) => {
 
                     // Enforce brand owner restriction if not an admin
                     let brandObjectId;
-                    if (req.user.role === 'brand') {
+                    if (req.user.role === 'brand' || req.user.role === 'custom_maker') {
                         const rawId = (req.user.selectedBrands && req.user.selectedBrands[0]);
                         brandObjectId = (rawId?._id || rawId?.id || rawId);
                     } else {

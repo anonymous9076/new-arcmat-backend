@@ -41,6 +41,7 @@ const getPlatformStats = async (req, res) => {
         const roles = {
             architect: 0,
             brand: 0,
+            custom_maker: 0,
             vendor: 0,
             retailer: 0,
             professional: 0,
@@ -59,7 +60,7 @@ const getPlatformStats = async (req, res) => {
             totalUsers: result.totalUsers[0]?.count || 0,
             roles: {
                 architects: roles.architect,
-                brands: roles.brand + roles.vendor,
+                brands: roles.brand + roles.vendor + roles.custom_maker,
                 retailers: roles.retailer,
                 professionals: roles.professional + roles.customer, // Sum both new and legacy roles
             },

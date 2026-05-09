@@ -7,14 +7,14 @@ const getContractorDetails = async (req, res) => {
         const { slug } = req.params;
 
         const contractor = await Contractor.findOne({ slug })
-            .populate("categoryId", "name image description")
-            .populate("subcategoryId", "name")
-            .populate("userId", "name profile")
-            .lean();
+            .populate("userId", "name profile");
 
         if (!contractor) {
             return fail(res, "Contractor not found", 404);
         }
+
+        // Increment views
+        await Contractor.findByIdAndUpdate(contractor._id, { $inc: { views: 1 } });
 
         // Fetch portfolio items
         const portfolio = await ContractorPortfolioItem.find({ contractorId: contractor._id })

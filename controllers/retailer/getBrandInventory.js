@@ -1,5 +1,6 @@
 import Product from '../../models/product.js';
 import variant from '../../models/productVariant.js';
+import Brand from '../../models/brand.js';
 import { success, fail } from '../../middlewares/responseHandler.js';
 
 /**
@@ -11,6 +12,10 @@ const getBrandInventory = async (req, res) => {
         const { brandId } = req.params;
         const { page = 1, limit = 12, search } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
+        const brand = await Brand.findById(brandId).select('ownerType').lean();
+        if (brand?.ownerType === 'custom_maker') {
+            return fail(res, new Error('Custom maker products are not available for retailer inventory.'), 403);
+        }
 
         const query = { brand: brandId, status: 1 }; // Only active products
 
