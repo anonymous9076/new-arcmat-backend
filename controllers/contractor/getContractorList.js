@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Contractor from "../../models/contractor.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
 
@@ -48,6 +49,14 @@ const getContractorList = async (req, res) => {
             .skip(skip)
             .limit(parseInt(limit))
             .lean();
+
+        // Manually populate categoryId if it's a valid ObjectId
+        for (let item of data) {
+            if (item.categoryId && mongoose.Types.ObjectId.isValid(item.categoryId)) {
+                const category = await mongoose.model('Category').findById(item.categoryId).select('name').lean();
+                if (category) item.categoryId = category;
+            }
+        }
 
         return success(res, {
             data,

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Contractor from "../../models/contractor.js";
 import ContractorPortfolioItem from "../../models/contractorPortfolioItem.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
@@ -7,10 +8,17 @@ const getContractorDetails = async (req, res) => {
         const { slug } = req.params;
 
         const contractor = await Contractor.findOne({ slug })
-            .populate("userId", "name profile");
+            .populate("userId", "name profile")
+            .lean();
 
         if (!contractor) {
             return fail(res, "Contractor not found", 404);
+        }
+
+        // Manually populate categoryId if it's a valid ObjectId
+        if (contractor.categoryId && mongoose.Types.ObjectId.isValid(contractor.categoryId)) {
+            const category = await mongoose.model('Category').findById(contractor.categoryId).select('name').lean();
+            if (category) contractor.categoryId = category;
         }
 
         // Increment views
