@@ -27,6 +27,8 @@ export const s3Upload = async (userId, files, folder = 'user_uploads') => {
             const fileName = `${userId}_${imageName}_${Date.now()}${extension}`;
             const key = `${folder}/${fileName}`;
 
+            console.log(`S3 Uploading - Bucket: ${BUCKET_NAME}, Key: ${key}, ContentType: ${file.mimetype}`);
+
             const params = {
                 Bucket: BUCKET_NAME,
                 Key: key,
@@ -35,6 +37,7 @@ export const s3Upload = async (userId, files, folder = 'user_uploads') => {
             };
 
             await s3Client.send(new PutObjectCommand(params));
+            console.log(`S3 Upload Success - Key: ${key}`);
 
             // Construct the secure URL
             const secureUrl = `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${key}`;
@@ -49,7 +52,13 @@ export const s3Upload = async (userId, files, folder = 'user_uploads') => {
         return results;
 
     } catch (error) {
-        console.error('S3 upload error:', error);
+        console.error('S3 upload error details:', {
+            message: error.message,
+            code: error.code,
+            requestId: error.$metadata?.requestId,
+            bucket: BUCKET_NAME,
+            region: REGION
+        });
         throw new Error(`Failed to upload file(s) to S3: ${error.message}`);
     }
 };

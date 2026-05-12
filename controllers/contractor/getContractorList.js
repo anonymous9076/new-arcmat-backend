@@ -18,17 +18,19 @@ const getContractorList = async (req, res) => {
         } = req.query;
 
         const query = {};
+        console.log("getContractorList - Received Query Params:", req.query);
 
         // Filtering
         // if (status) query.status = status; // Temporarily disabled status filter
-        query.visibility = 'public'; // Only show public profiles
-        if (city) query["location.city"] = new RegExp(city, "i");
-        if (categoryId) query.categoryId = categoryId;
-        if (providerType) query.providerType = providerType;
+        query.visibility = { $ne: 'private' }; // Show public and default/missing visibility profiles, exclude private
         
-        if (isFeatured !== undefined) query.isFeatured = isFeatured === 'true';
-        if (isVerified !== undefined) query.isVerified = isVerified === 'true';
-        if (isTopRated !== undefined) query.isTopRated = isTopRated === 'true';
+        if (city) query["location.city"] = new RegExp(city, "i");
+        if (categoryId && categoryId !== 'all') query.categoryId = categoryId;
+        if (providerType && providerType !== 'all') query.providerType = providerType;
+        
+        if (isFeatured !== undefined && isFeatured !== 'all') query.isFeatured = isFeatured === 'true';
+        if (isVerified !== undefined && isVerified !== 'all') query.isVerified = isVerified === 'true';
+        if (isTopRated !== undefined && isTopRated !== 'all') query.isTopRated = isTopRated === 'true';
 
         // Generic search
         if (search) {
@@ -40,8 +42,11 @@ const getContractorList = async (req, res) => {
             ];
         }
 
+        console.log("getContractorList - Constructed Mongo Query:", JSON.stringify(query, null, 2));
+
         const skip = (parseInt(page) - 1) * parseInt(limit);
         const total = await Contractor.countDocuments(query);
+        console.log(`getContractorList - Total documents matching query: ${total}`);
         
         const data = await Contractor.find(query)
             .populate("userId", "name profile")

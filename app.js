@@ -99,7 +99,15 @@ app.use(
 
 app.use(normalizeResponse);
 
-// Routes
+// Request Logger for debugging route matching
+app.use((req, res, next) => {
+  console.log(`Incoming Request: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Routes - CONTRACTOR FIRST
+app.use("/api/contractor", contractorRouter);
+
 app.use("/api", infoRouter);
 app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);
@@ -128,7 +136,6 @@ app.use("/api/rating", ratingRouter);
 app.use("/api/notification", notificationRouter);
 app.use("/api/inspiration-gallery", inspirationGalleryRouter);
 app.use("/api/project-templates", projectTemplateRouter);
-app.use("/api/contractor", contractorRouter);
 
 
 
