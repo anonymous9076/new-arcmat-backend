@@ -19,7 +19,9 @@ const userSchema = mongoose.Schema(
       type: String,
       required: [true, "Mobile is required"],
       unique: [true, "Already registered"],
+      match: [/^\d{10}$/, "Please provide a valid 10-digit mobile number"]
     },
+
     password: {
       type: String,
       required: true

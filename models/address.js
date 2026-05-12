@@ -47,6 +47,7 @@ const addressSchema = mongoose.Schema(
     mobile: {
       type: String,
       required: [true, "mobile is Required"],
+      match: [/^\d{10}$/, "Please provide a valid 10-digit mobile number"]
     },
     status: {
       type: Number,

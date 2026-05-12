@@ -81,8 +81,14 @@ const contractorSchema = new mongoose.Schema(
         
         // Contact Details
         contact: {
-            phone: String,
-            whatsapp: String,
+            phone: {
+                type: String,
+                match: [/^\d{10}$/, "Please provide a valid 10-digit phone number"]
+            },
+            whatsapp: {
+                type: String,
+                match: [/^\d{10}$/, "Please provide a valid 10-digit WhatsApp number"]
+            },
             email: String,
             website: String,
             instagram: String,

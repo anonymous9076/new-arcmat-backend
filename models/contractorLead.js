@@ -19,7 +19,8 @@ const contractorLeadSchema = new mongoose.Schema(
         phone: {
             type: String,
             required: true,
-            trim: true
+            trim: true,
+            match: [/^\d{10}$/, "Please provide a valid 10-digit phone number"]
         },
         email: {
             type: String,

@@ -10,8 +10,9 @@ const contactschema = new mongoose.Schema({
         required: true
     },
     mobile: {
-        type: Number,
-        required: true
+        type: String,
+        required: true,
+        match: [/^\d{10}$/, "Please provide a valid 10-digit mobile number"]
     },
     email: {
         type: String,

@@ -20,7 +20,8 @@ const brandLeadSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
-        required: true
+        required: true,
+        match: [/^\d{10}$/, "Please provide a valid 10-digit phone number"]
     },
     location: {
         type: String,

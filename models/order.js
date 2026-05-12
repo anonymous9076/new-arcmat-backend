@@ -46,6 +46,7 @@ const orderSchema = mongoose.Schema(
     shipping_mobile: {
       type: String,
       required: [true, "mobile is Required"],
+      match: [/^\d{10}$/, "Please provide a valid 10-digit mobile number"]
     },
     coupon_name: {
       type: String,

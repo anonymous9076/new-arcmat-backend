@@ -48,7 +48,11 @@ const retailerRequestSchema = mongoose.Schema(
         // Retailer contact info shared back after Arcmat confirms
         retailerDetails: {
             name: { type: String, trim: true },
-            phone: { type: String, trim: true },
+            phone: { 
+                type: String, 
+                trim: true,
+                match: [/^\d{10}$/, "Please provide a valid 10-digit phone number"]
+            },
             city: { type: String, trim: true },
             brands: [{ type: String, trim: true }],
         },

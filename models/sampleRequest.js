@@ -32,7 +32,11 @@ const sampleRequestSchema = mongoose.Schema(
         // Shipping address for sample delivery
         shippingAddress: {
             name: { type: String, trim: true },
-            phone: { type: String, trim: true },
+            phone: { 
+                type: String, 
+                trim: true,
+                match: [/^\d{10}$/, "Please provide a valid 10-digit phone number"]
+            },
             address: { type: String, trim: true },
             city: { type: String, trim: true },
             pincode: { type: String, trim: true },
