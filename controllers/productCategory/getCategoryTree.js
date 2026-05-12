@@ -5,9 +5,14 @@ import { success, fail } from "../../middlewares/responseHandler.js";
 
 const getCategoryTree = async (req, res) => {
   try {
-    const { ownerType } = req.query;
+    const { ownerType, categoryType } = req.query;
 
-    let categories = await Category.find().lean();
+    const query = {};
+    if (categoryType) {
+      query.categoryType = categoryType;
+    }
+
+    let categories = await Category.find(query).lean();
     
     if (ownerType) {
       // 1. Get all brands of this type (handling null/undefined as 'brand')

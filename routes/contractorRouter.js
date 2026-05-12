@@ -12,7 +12,9 @@ import deletePortfolioItem from "../controllers/contractor/deletePortfolioItem.j
 import getPortfolioItemDetails from "../controllers/contractor/getPortfolioItemDetails.js";
 import getContractorLeads from "../controllers/contractor/getContractorLeads.js";
 import getContractorStats from "../controllers/contractor/getContractorStats.js";
+import getCategoryRequests from "../controllers/contractor/getCategoryRequests.js";
 import upload from "../middlewares/imageUploader.js";
+import authenticateToken from "../middlewares/verifyToken.js";
 
 const router = express.Router();
 
@@ -32,5 +34,8 @@ router.post("/:contractorId/portfolio", upload.array("files", 12), createPortfol
 router.get("/:contractorId/leads", getContractorLeads);
 router.patch("/portfolio/:itemId", upload.array("files", 12), updatePortfolioItem);
 router.delete("/portfolio/:itemId", deletePortfolioItem);
+
+// Admin routes
+router.get("/admin/category-requests", authenticateToken(['admin']), getCategoryRequests);
 
 export default router;

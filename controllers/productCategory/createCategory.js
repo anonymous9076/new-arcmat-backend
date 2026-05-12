@@ -19,6 +19,7 @@ const createcategory = async (req, res) => {
       parent_category,
       isActive,
       status,       // frontend sends 'status' field
+      categoryType,
       userid,
       showcase
     } = req.body;
@@ -88,6 +89,7 @@ const createcategory = async (req, res) => {
       level,
       image: imageDetails,
       userid: userid || req.user?._id, // Support explicit body or req.user
+      categoryType: categoryType || 'product',
       showcase: showcase ? (Array.isArray(showcase) ? showcase : showcase.split(',').filter(Boolean)) : []
     });
 

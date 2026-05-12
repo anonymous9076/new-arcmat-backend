@@ -40,6 +40,12 @@ const contractorSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.Mixed,
             ref: 'Category'
         },
+        subcategoryIds: [{
+            type: mongoose.Schema.Types.Mixed,
+            ref: 'Category'
+        }],
+        otherCategoryName: String,
+        otherSubcategoryName: String,
         serviceIds: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Category'
