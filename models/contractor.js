@@ -122,7 +122,15 @@ const contractorSchema = new mongoose.Schema(
         // Availability
         availability: {
             status: { type: String, enum: ['available', 'busy', 'away'], default: 'available' },
-            workingHours: String
+            workingHours: {
+                monday: { from: String, to: String, isClosed: { type: Boolean, default: false } },
+                tuesday: { from: String, to: String, isClosed: { type: Boolean, default: false } },
+                wednesday: { from: String, to: String, isClosed: { type: Boolean, default: false } },
+                thursday: { from: String, to: String, isClosed: { type: Boolean, default: false } },
+                friday: { from: String, to: String, isClosed: { type: Boolean, default: false } },
+                saturday: { from: String, to: String, isClosed: { type: Boolean, default: false } },
+                sunday: { from: String, to: String, isClosed: { type: Boolean, default: false } }
+            }
         },
         responseTime: String,
         views: { type: Number, default: 0 },

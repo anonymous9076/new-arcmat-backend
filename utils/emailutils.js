@@ -349,3 +349,62 @@ export const sendContractorDecisionEmail = async (contractorEmail, contractorNam
         return { success: false, error: error.message };
     }
 };
+
+export const sendContractorInquiryEmail = async (contractorData, leadData) => {
+    const transporter = nodemailer.createTransport({
+        service: process.env.SMPT_SERVICE || 'gmail',
+        host: process.env.SMPT_HOST || 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: process.env.SMPT_MAIL,
+            pass: process.env.SMPT_PASSWORD
+        },
+    });
+
+    const mailOptions = {
+        from: `"Arcmat Contractor Inquiries" <${process.env.SMPT_MAIL}>`,
+        to: [contractorData.email, process.env.SMPT_MAIL].filter(Boolean), // Send to contractor and admin
+        subject: `New Project Inquiry for ${contractorData.businessName} from ${leadData.name}`,
+        html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 40px; border: 1px solid #f0f0f0; border-radius: 16px; background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #2d3142; margin: 0; font-size: 24px; font-weight: 800;">ARCMAT</h1>
+                </div>
+                <div style="background-color: #fef7f2; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+                    <h2 style="color: #2d3142; margin-top: 0; font-size: 20px;">New Project Inquiry</h2>
+                    <p style="color: #4a4a4a; line-height: 1.6; font-size: 16px;">
+                        Hello <strong>${contractorData.businessName}</strong>, you have received a new inquiry from a potential client.
+                    </p>
+                    
+                    <hr style="border: 0; border-top: 1px solid #ead4ce; margin: 20px 0;">
+                    
+                    <h3 style="color: #2d3142; font-size: 16px; margin-bottom: 10px;">Client Details:</h3>
+                    <table style="width: 100%; font-size: 14px; color: #4a4a4a; line-height: 2;">
+                        <tr><td style="width: 100px; font-weight: bold;">Name:</td><td>${leadData.name}</td></tr>
+                        <tr><td style="font-weight: bold;">Phone:</td><td>${leadData.phone}</td></tr>
+                        <tr><td style="font-weight: bold;">Location:</td><td>${leadData.location}</td></tr>
+                    </table>
+                    
+                    <h3 style="color: #2d3142; font-size: 16px; margin-top: 20px; margin-bottom: 10px;">Project Requirements:</h3>
+                    <div style="background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #ead4ce; color: #4a4a4a; font-style: italic; font-size: 14px;">
+                        ${leadData.requirement}
+                    </div>
+                </div>
+                <p style="color: #888888; font-size: 12px; text-align: center;">
+                    This inquiry was submitted through your professional profile on the Arcmat Marketplace.
+                    <br>
+                    &copy; ${new Date().getFullYear()} Arcmat. All rights reserved.
+                </p>
+            </div>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending contractor inquiry email:', error);
+        return { success: false, error: error.message };
+    }
+};

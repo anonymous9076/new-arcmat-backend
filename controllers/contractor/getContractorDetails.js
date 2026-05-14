@@ -8,7 +8,7 @@ const getContractorDetails = async (req, res) => {
         const { slug } = req.params;
 
         const contractor = await Contractor.findOne({ slug })
-            .populate("userId", "name profile")
+            .populate("userId", "name profile email mobile")
             .lean();
 
         if (!contractor) {
