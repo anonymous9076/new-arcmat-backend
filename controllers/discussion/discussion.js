@@ -5,6 +5,7 @@ import SampleRequest from "../../models/sampleRequest.js";
 import { success, fail } from '../../middlewares/responseHandler.js';
 import { s3Upload } from "../../utils/s3upload.js";
 import mongoose from 'mongoose';
+import { emitToProject, emitToUser } from "../../socket/socketManager.js";
 
 const isSameId = (left, right) => Boolean(left && right && left.toString() === right.toString());
 
@@ -259,6 +260,17 @@ export const postComment = async (req, res) => {
             console.error("Notification creation failed in postComment:", notifyErr);
         }
 
+        // Emit real-time event
+        if (projectId) {
+            emitToProject(projectId.toString(), "discussion:new-message", comment);
+        } else if (retailerId) {
+            // For direct retailer threads, you might want to emit to the specific participants
+            emitToUser(authorId.toString(), "discussion:new-message", comment);
+            if (retailerId !== authorId.toString()) {
+                emitToUser(retailerId.toString(), "discussion:new-message", comment);
+            }
+        }
+
         return success(res, comment, 201);
     } catch (err) {
         return fail(res, err, 500);
@@ -373,6 +385,17 @@ export const deleteComment = async (req, res) => {
         }
 
         await comment.deleteOne();
+
+        // Emit real-time event for deletion
+        if (comment.projectId) {
+            emitToProject(comment.projectId.toString(), "discussion:delete-message", { commentId });
+        } else if (comment.retailerId) {
+            emitToUser(userId.toString(), "discussion:delete-message", { commentId });
+            if (comment.retailerId.toString() !== userId.toString()) {
+                emitToUser(comment.retailerId.toString(), "discussion:delete-message", { commentId });
+            }
+        }
+
         return success(res, { message: "Comment deleted" }, 200);
     } catch (err) {
         return fail(res, err, 500);

@@ -1,5 +1,6 @@
 import Notification from "../../models/notification.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
+import { emitToUser } from "../../socket/socketManager.js";
 
 export const createNotification = async (req, res) => {
     try {
@@ -18,6 +19,11 @@ export const createNotification = async (req, res) => {
         });
 
         await notification.save();
+
+        if (recipient && recipientType !== 'role' && recipientType !== 'all') {
+            emitToUser(recipient.toString(), "notification:new", notification);
+        }
+
         return success(res, notification, 201);
     } catch (err) {
         console.error("createNotification error:", err);
@@ -93,6 +99,7 @@ export const handleAction = async (req, res) => {
                     actionStatus: 'none'
                 });
                 await architectNotify.save();
+                emitToUser(notification.sender.toString(), "notification:new", architectNotify);
             }
         }
 

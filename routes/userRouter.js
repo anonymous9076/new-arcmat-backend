@@ -7,22 +7,26 @@ import changePassword from "../controllers/auth/changePassword.js";
 import forgotPassword from "../controllers/auth/forgotPassword.js";
 import resetPassword from "../controllers/auth/resetPassword.js";
 import login from "../controllers/auth/login.js";
+import verifyLoginOtp from "../controllers/auth/verifyLoginOtp.js";
+import resendLoginOtp from "../controllers/auth/resendLoginOtp.js";
 import userlist from "../controllers/auth/userList.js";
 import usersingle from "../controllers/auth/getUserById.js";
 import updateuser from "../controllers/auth/updateUser.js";
 import deleteuser from "../controllers/auth/deleteUser.js";
 import platformstats from "../controllers/auth/platformStats.js";
 import authenticateToken from "../middlewares/verifyToken.js";
-import { authLimiter, registerLimiter, forgotPasswordLimiter } from "../middlewares/rateLimiter.js";
+import { loginLimiter, loginOtpLimiter, accountOtpLimiter, registerLimiter, forgotPasswordLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 const upload = multer();
 
 // Public endpoints
-router.post('/register', register);
-router.post('/login', upload.none(), login);
-router.post('/resend-otp', resendOtp);
-router.post('/verify-otp', verifyOtp);
+router.post('/register', registerLimiter, register);
+router.post('/login', loginLimiter, upload.none(), login);
+router.post('/verify-login-otp', loginOtpLimiter, verifyLoginOtp);
+router.post('/resend-login-otp', loginOtpLimiter, resendLoginOtp);
+router.post('/resend-otp', accountOtpLimiter, resendOtp);
+router.post('/verify-otp', accountOtpLimiter, verifyOtp);
 router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
 
 // Protected endpoints (require JWT)

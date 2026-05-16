@@ -1,14 +1,24 @@
-import jwt from "jsonwebtoken";
 import usertable from "../../models/user.js";
 import bcrypt from "bcryptjs";
 import { success, fail } from "../../middlewares/responseHandler.js";
+import { generateOTP, hashDataWithExpiry } from "../../utils/otputils.js";
+import { sendLoginOTPEmail } from "../../utils/emailutils.js";
+import { verifyTurnstileToken } from "../../utils/turnstile.js";
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, captchaToken } = req.body;
+    const isCaptchaEnabled = process.env.ENFORCE_LOGIN_CAPTCHA === "true";
 
     if (!email || !password) {
       return fail(res, { message: "Email and password are required" }, 400);
+    }
+
+    if (isCaptchaEnabled) {
+      const captchaValidation = await verifyTurnstileToken(captchaToken, req);
+      if (!captchaValidation.success) {
+        return fail(res, { message: captchaValidation.reason }, 400);
+      }
     }
 
     const user = await usertable.findOne({ email }).populate('selectedBrands', 'name logo slug isActive _id description website shippingAddress billingAddress');
@@ -37,34 +47,28 @@ const login = async (req, res) => {
       return fail(res, { message: "Invalid credentials" }, 401);
     }
 
-    // Generate token
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        professionalType: user.professionalType
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    if (user.login_otp_blocked_until && user.login_otp_blocked_until > new Date()) {
+      const waitTime = Math.ceil((user.login_otp_blocked_until - new Date()) / (60 * 1000));
+      return fail(res, { message: `Too many failed OTP attempts. Try again after ${waitTime} minutes.` }, 403);
+    }
 
-    // Sanitize user object (remove password and internal fields)
-    const userResponse = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      role: user.role,
-      professionalType: user.professionalType,
-      profile: user.profile,
-      selectedBrands: user.selectedBrands || []
-    };
+    const otp = generateOTP();
+    const login_otp_hash = hashDataWithExpiry(otp, 5);
+
+    user.login_otp_hash = login_otp_hash;
+    user.login_otp_attempts = 0;
+    user.login_otp_blocked_until = undefined;
+    await user.save();
+
+    const emailResult = await sendLoginOTPEmail(user.email, otp);
+    if (!emailResult.success) {
+      return fail(res, { message: "Failed to send OTP email. Please try again." }, 500);
+    }
 
     return success(res, {
-      message: "Login successful",
-      token: token,
-      user: userResponse
+      message: "OTP sent to your email",
+      requireLoginOtp: true,
+      email: user.email
     });
 
   } catch (error) {

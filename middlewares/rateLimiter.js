@@ -20,6 +20,8 @@ export const createRateLimiter = (minutes, maxAttempts, message) => {
 };
 
 // Common limiters
-export const authLimiter = createRateLimiter(15, 5, "Too many login attempts. Please try again after 15 minutes.");
+export const loginLimiter = createRateLimiter(15, 3, "Too many login attempts. Please try again after 15 minutes.");
+export const loginOtpLimiter = createRateLimiter(15, 10, "Too many OTP requests. Please try again after 15 minutes.");
+export const accountOtpLimiter = createRateLimiter(15, 10, "Too many OTP requests. Please try again after 15 minutes.");
 export const registerLimiter = createRateLimiter(60, 3, "Too many accounts created from this IP. Please try again after an hour.");
 export const forgotPasswordLimiter = createRateLimiter(30, 3, "Too many password reset requests. Please try again after 30 minutes.");

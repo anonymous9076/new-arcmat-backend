@@ -4,6 +4,7 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import path from "path";
+import http from "http";
 import mongoose from "mongoose";
 import { fileURLToPath } from "url";
 import connectdb from "./db/connection.js";
@@ -42,6 +43,7 @@ import contractorRouter from "./routes/contractorRouter.js";
 
 import normalizeResponse from "./middlewares/normalizeResponse.js";
 import errorHandler from "./middlewares/errorHandler.js";
+import { initSocket } from "./socket/socketManager.js";
 
 // Models
 import "./models/contactus.js";
@@ -78,6 +80,10 @@ const __dirname = path.dirname(__filename);
 mongoose.set("strictQuery", false);
 
 const app = express();
+const httpServer = http.createServer(app);
+
+// Initialize Socket.IO
+initSocket(httpServer);
 
 // Middle-wares
 app.use(cors({
@@ -178,7 +184,7 @@ if (process.env.VERCEL !== "1") {
   const port = process.env.PORT || 8000;
 
   initApp().then(() => {
-    const server = app.listen(port, () => {
+    const server = httpServer.listen(port, () => {
       console.log(`Server running on port ${port}`);
     }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {

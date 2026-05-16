@@ -42,6 +42,46 @@ export const sendOTPEmail = async (to, otp) => {
     }
 };
 
+export const sendLoginOTPEmail = async (to, otp) => {
+    const transporter = nodemailer.createTransport({
+        service: process.env.SMPT_SERVICE || 'gmail',
+        host: process.env.SMPT_HOST || 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: process.env.SMPT_MAIL,
+            pass: process.env.SMPT_PASSWORD
+        },
+    });
+
+    const mailOptions = {
+        from: `"Arcmat Security" <${process.env.SMPT_MAIL}>`,
+        to,
+        subject: 'Your OTP for Sign In',
+        text: `Your sign-in OTP is: ${otp}. It will expire in 5 minutes.`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                <h2 style="color: #333;">Secure Sign In</h2>
+                <p>Hello,</p>
+                <p>Use this One-Time Password to complete your sign in:</p>
+                <div style="font-size: 24px; font-weight: bold; color: #4CAF50; padding: 10px; background-color: #f9f9f9; border-radius: 5px; text-align: center; margin: 20px 0;">
+                    ${otp}
+                </div>
+                <p>This OTP is valid for <strong>5 minutes</strong>. If this was not you, please change your password immediately.</p>
+                <br>
+                <p>Best regards,<br>Arcmat Team</p>
+            </div>
+        `
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+};
+
 
 export const sendInvitationEmail = async (to, clientName, architectName, projectName, invitationLink) => {
     const transporter = nodemailer.createTransport({

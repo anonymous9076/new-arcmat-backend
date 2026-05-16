@@ -73,6 +73,16 @@ const userSchema = mongoose.Schema(
     otp_blocked_until: {
       type: Date
     },
+    login_otp_hash: {
+      type: String
+    },
+    login_otp_attempts: {
+      type: Number,
+      default: 0
+    },
+    login_otp_blocked_until: {
+      type: Date
+    },
     verificationExpires: {
       type: Date,
       index: { expires: '24h' } // Automatically delete unverified users after 24 hours
