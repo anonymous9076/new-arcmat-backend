@@ -1,11 +1,12 @@
 import usertable from "../../models/user.js";
 import { generateOTP, hashDataWithExpiry } from "../../utils/otputils.js";
 import { sendOTPMessage } from "../../utils/smsutils.js";
+import { sendOTPEmail } from "../../utils/emailutils.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
 
 const resendOtp = async (req, res) => {
     try {
-        const { mobile } = req.body;
+        const { mobile, sendOtpTo } = req.body;
         const normalizedMobile = String(mobile || "").replace(/\D/g, "");
 
         if (!normalizedMobile) {
@@ -29,7 +30,7 @@ const resendOtp = async (req, res) => {
             return fail(res, { message: `Resending OTP is blocked. Please try again after ${waitTime} minutes.` }, 403);
         }
 
-        // Generate new OTP Flow
+        // Generate new OTP
         const otp = generateOTP();
         const otp_hash = hashDataWithExpiry(otp, 5); // 5 minutes expiry
 
@@ -37,14 +38,34 @@ const resendOtp = async (req, res) => {
         user.otp_hash = otp_hash;
         await user.save();
 
-        const smsResult = await sendOTPMessage(normalizedMobile, otp);
+        // Determine channel: use email if explicitly requested and user has an email
+        const useEmail = sendOtpTo === 'email' && user.email;
 
+        if (useEmail) {
+            const emailResult = await sendOTPEmail(user.email, otp);
+            if (!emailResult.success) {
+                return fail(res, { message: "Failed to send OTP email", error: emailResult.error }, 500);
+            }
+            return success(res, {
+                message: "OTP has been resent to your email address",
+                mobile: normalizedMobile,
+                sentTo: 'email'
+            });
+        }
+
+        // Default: SMS
+        const smsResult = await sendOTPMessage(normalizedMobile, otp);
         if (!smsResult.success) {
             return fail(res, { message: "Failed to send OTP SMS", error: smsResult.error }, 500);
         }
         const smsRequestId = smsResult?.data?.request_id || smsResult?.data?.message;
 
-        return success(res, { message: "OTP has been resent to your mobile", mobile: normalizedMobile, smsRequestId });
+        return success(res, {
+            message: "OTP has been resent to your mobile",
+            mobile: normalizedMobile,
+            sentTo: 'mobile',
+            smsRequestId
+        });
 
     } catch (error) {
         console.error("Resend OTP Error:", error);

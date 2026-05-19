@@ -23,4 +23,4 @@ export const createRateLimiter = (minutes, maxAttempts, message) => {
 export const loginLimiter = createRateLimiter(15, 3, "Too many login attempts. Please try again after 15 minutes.");
 export const loginOtpLimiter = createRateLimiter(15, 10, "Too many OTP requests. Please try again after 15 minutes.");
 export const accountOtpLimiter = createRateLimiter(15, 10, "Too many OTP requests. Please try again after 15 minutes.");
-export const forgotPasswordLimiter = createRateLimiter(30, 3, "Too many password reset requests. Please try again after 30 minutes.");
+export const forgotPasswordLimiter = createRateLimiter(15, 10, "Too many password reset requests. Please try again after 15 minutes.");

@@ -6,7 +6,7 @@ import { success, fail } from "../../middlewares/responseHandler.js";
 
 const verifyOtp = async (req, res) => {
     try {
-        const { mobile, otp } = req.body;
+        const { mobile, otp, sendOtpTo } = req.body;
         const normalizedMobile = String(mobile || "").replace(/\D/g, "");
 
         if (!normalizedMobile || !otp) {
@@ -45,10 +45,15 @@ const verifyOtp = async (req, res) => {
             return fail(res, { message, attemptsRemaining: Math.max(0, 3 - user.otp_attempts) }, 401);
         }
 
-        user.isPhoneVerified = 1;
-        if (!user.email) {
-            user.isEmailVerified = 0;
+        // Mark the correct channel as verified
+        // Verifying either email OR mobile OTP is sufficient to complete registration
+        if (sendOtpTo === 'email' && user.email) {
+            user.isEmailVerified = 1;   // Email OTP verified
+            // isPhoneVerified stays 0 — can be done later via add-email flow in reverse
+        } else {
+            user.isPhoneVerified = 1;   // Mobile OTP verified (default)
         }
+
         user.otp_hash = undefined;
         user.otp_attempts = 0;
         user.otp_blocked_until = undefined;

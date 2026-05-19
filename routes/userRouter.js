@@ -12,6 +12,8 @@ import usersingle from "../controllers/auth/getUserById.js";
 import updateuser from "../controllers/auth/updateUser.js";
 import deleteuser from "../controllers/auth/deleteUser.js";
 import platformstats from "../controllers/auth/platformStats.js";
+import addEmail from "../controllers/auth/addEmail.js";
+import verifyEmailOtp from "../controllers/auth/verifyEmailOtp.js";
 import authenticateToken from "../middlewares/verifyToken.js";
 import { loginLimiter, accountOtpLimiter, forgotPasswordLimiter } from "../middlewares/rateLimiter.js";
 
@@ -28,6 +30,8 @@ router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
 // Protected endpoints (require JWT)
 router.patch('/change-password', authenticateToken, changePassword);
 router.post('/reset-password', authenticateToken, resetPassword);
+router.post('/add-email', authenticateToken, addEmail);
+router.post('/verify-email-otp', authenticateToken, verifyEmailOtp);
 router.get('/platform-stats', authenticateToken(['admin']), platformstats);
 router.get('/', authenticateToken(['admin']), userlist);
 router.get('/userinfo', authenticateToken, usersingle);

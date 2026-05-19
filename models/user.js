@@ -78,6 +78,9 @@ const userSchema = mongoose.Schema(
     otp_blocked_until: {
       type: Date
     },
+    email_otp_hash: {
+      type: String
+    },
     login_otp_hash: {
       type: String
     },

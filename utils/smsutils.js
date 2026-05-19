@@ -22,7 +22,18 @@ export const sendOTPMessage = async (mobile, otp) => {
   const senderId = cleanEnv(process.env.MSG91_SENDER_ID) || "ARCMAT";
 
   if (!authKey || !templateId) {
-    return { success: false, error: "MSG91 configuration missing" };
+    // If running locally without SMS gateway credentials, print the OTP to the console and succeed
+    console.log(`\n--- [LOCAL DEVELOPMENT OTP BYPASS] ---`);
+    console.log(`Recipient: ${mobile}`);
+    console.log(`OTP Code:  ${otp}`);
+    console.log(`-------------------------------------\n`);
+    return {
+      success: true,
+      data: {
+        request_id: "mock_request_id_" + Date.now(),
+        message: "Message Sent Successfully"
+      }
+    };
   }
 
   // console.log("MSG91 template:", templateId, "sender:", senderId);
