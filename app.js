@@ -106,10 +106,10 @@ app.use(
 app.use(normalizeResponse);
 
 // Request Logger for debugging route matching
-app.use((req, res, next) => {
-  console.log(`Incoming Request: ${req.method} ${req.originalUrl}`);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log(`Incoming Request: ${req.method} ${req.originalUrl}`);
+//   next();
+// });
 
 // Routes - CONTRACTOR FIRST
 app.use("/api/contractor", contractorRouter);

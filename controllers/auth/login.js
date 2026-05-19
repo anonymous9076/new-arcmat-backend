@@ -1,17 +1,31 @@
 import usertable from "../../models/user.js";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { success, fail } from "../../middlewares/responseHandler.js";
-import { generateOTP, hashDataWithExpiry } from "../../utils/otputils.js";
-import { sendLoginOTPEmail } from "../../utils/emailutils.js";
 import { verifyTurnstileToken } from "../../utils/turnstile.js";
 
 const login = async (req, res) => {
   try {
-    const { email, password, captchaToken } = req.body;
+    const { mobile, email, loginId, identifier, password, captchaToken } = req.body;
     const isCaptchaEnabled = process.env.ENFORCE_LOGIN_CAPTCHA === "true";
+    const rawLogin = String(loginId || identifier || email || mobile || "").trim();
+    const loginDigits = rawLogin.replace(/\D/g, "");
+    const isEmailLogin = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawLogin);
 
-    if (!email || !password) {
-      return fail(res, { message: "Email and password are required" }, 400);
+    if (!rawLogin || !password) {
+      return fail(res, { message: "Email or mobile and password are required" }, 400);
+    }
+
+    let userQuery = null;
+
+    if (isEmailLogin) {
+      userQuery = { email: rawLogin.toLowerCase() };
+    } else if (loginDigits.length === 10) {
+      userQuery = { mobile: loginDigits };
+    } else if (loginDigits.length === 12 && loginDigits.startsWith("91")) {
+      userQuery = { mobile: loginDigits.slice(2) };
+    } else {
+      return fail(res, { message: "Please provide a valid email or 10-digit mobile number" }, 400);
     }
 
     if (isCaptchaEnabled) {
@@ -21,15 +35,10 @@ const login = async (req, res) => {
       }
     }
 
-    const user = await usertable.findOne({ email }).populate('selectedBrands', 'name logo slug isActive _id description website shippingAddress billingAddress');
+    const user = await usertable.findOne(userQuery).populate('selectedBrands', 'name logo slug isActive _id description website shippingAddress billingAddress');
 
     if (!user) {
       return fail(res, { message: "Invalid credentials" }, 401);
-    }
-
-    // Check if email is verified
-    if (user.isEmailVerified === 0) {
-      return fail(res, { message: "Email not verified. Please verify your email before logging in." }, 403);
     }
 
     // Check if user is active
@@ -47,28 +56,35 @@ const login = async (req, res) => {
       return fail(res, { message: "Invalid credentials" }, 401);
     }
 
-    if (user.login_otp_blocked_until && user.login_otp_blocked_until > new Date()) {
-      const waitTime = Math.ceil((user.login_otp_blocked_until - new Date()) / (60 * 1000));
-      return fail(res, { message: `Too many failed OTP attempts. Try again after ${waitTime} minutes.` }, 403);
-    }
-
-    const otp = generateOTP();
-    const login_otp_hash = hashDataWithExpiry(otp, 5);
-
-    user.login_otp_hash = login_otp_hash;
-    user.login_otp_attempts = 0;
-    user.login_otp_blocked_until = undefined;
+    user.lastLoginAt = new Date();
     await user.save();
 
-    const emailResult = await sendLoginOTPEmail(user.email, otp);
-    if (!emailResult.success) {
-      return fail(res, { message: "Failed to send OTP email. Please try again." }, 500);
-    }
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+        professionalType: user.professionalType
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     return success(res, {
-      message: "OTP sent to your email",
-      requireLoginOtp: true,
-      email: user.email
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role,
+        professionalType: user.professionalType,
+        profile: user.profile,
+        selectedBrands: user.selectedBrands || []
+      },
+      emailVerificationStatus: user.email ? (user.isEmailVerified ? "verified" : "unverified") : "missing"
     });
 
   } catch (error) {

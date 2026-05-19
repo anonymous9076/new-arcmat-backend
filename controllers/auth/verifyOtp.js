@@ -6,13 +6,17 @@ import { success, fail } from "../../middlewares/responseHandler.js";
 
 const verifyOtp = async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        const { mobile, otp } = req.body;
+        const normalizedMobile = String(mobile || "").replace(/\D/g, "");
 
-        if (!email || !otp) {
-            return fail(res, { message: "Email and OTP are required" }, 400);
+        if (!normalizedMobile || !otp) {
+            return fail(res, { message: "Mobile and OTP are required" }, 400);
+        }
+        if (!/^\d{10}$/.test(normalizedMobile)) {
+            return fail(res, { message: "Please provide a valid 10-digit mobile number" }, 400);
         }
 
-        const user = await usertable.findOne({ email }).populate('selectedBrands', 'name logo slug isActive _id description website shippingAddress billingAddress');
+        const user = await usertable.findOne({ mobile: normalizedMobile }).populate('selectedBrands', 'name logo slug isActive _id description website shippingAddress billingAddress');
 
         if (!user) {
             return fail(res, { message: "User not found" }, 404);
@@ -41,7 +45,10 @@ const verifyOtp = async (req, res) => {
             return fail(res, { message, attemptsRemaining: Math.max(0, 3 - user.otp_attempts) }, 401);
         }
 
-        user.isEmailVerified = 1;
+        user.isPhoneVerified = 1;
+        if (!user.email) {
+            user.isEmailVerified = 0;
+        }
         user.otp_hash = undefined;
         user.otp_attempts = 0;
         user.otp_blocked_until = undefined;
@@ -56,8 +63,10 @@ const verifyOtp = async (req, res) => {
                     id: user._id,
                     name: user.name,
                     email: user.email,
+                    mobile: user.mobile,
                     role: user.role
-                }
+                },
+                emailVerificationStatus: user.email ? (user.isEmailVerified ? "verified" : "unverified") : "missing"
             });
         }
 
@@ -65,6 +74,7 @@ const verifyOtp = async (req, res) => {
             {
                 id: user._id,
                 email: user.email,
+                mobile: user.mobile,
                 role: user.role
             },
             process.env.JWT_SECRET,
@@ -78,8 +88,10 @@ const verifyOtp = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                mobile: user.mobile,
                 role: user.role
-            }
+            },
+            emailVerificationStatus: user.email ? (user.isEmailVerified ? "verified" : "unverified") : "missing"
         });
 
     } catch (error) {

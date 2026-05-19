@@ -1,6 +1,5 @@
 import usertable from "../../models/user.js";
 import bcrypt from "bcryptjs";
-import { verifyHashedData } from "../../utils/otputils.js";
 import { success, fail } from "../../middlewares/responseHandler.js";
 
 /**
@@ -9,12 +8,12 @@ import { success, fail } from "../../middlewares/responseHandler.js";
 const resetPassword = async (req, res) => {
     try {
         const { newPassword } = req.body;
-        const email = req.user.email
+        const userId = req.user.id || req.user._id;
         if (!newPassword) {
             return fail(res, { message: " New Password are required" }, 400);
         }
 
-        const user = await usertable.findOne({ email });
+        const user = await usertable.findById(userId);
 
         if (!user) {
             return fail(res, { message: "User not found" }, 404);
@@ -36,7 +35,7 @@ const resetPassword = async (req, res) => {
         user.otp_blocked_until = undefined;
 
         // Also ensure user is verified if they resets password
-        user.isEmailVerified = 1;
+        user.isPhoneVerified = 1;
         user.verificationExpires = undefined;
 
         await user.save();

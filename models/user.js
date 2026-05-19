@@ -10,8 +10,9 @@ const userSchema = mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
+      required: false,
       unique: [true, "Already registered"],
+      sparse: true,
       lowercase: true,
       trim: true
     },
@@ -56,6 +57,10 @@ const userSchema = mongoose.Schema(
       default: 1
     },
     isEmailVerified: {
+      type: Number,
+      default: 0
+    },
+    isPhoneVerified: {
       type: Number,
       default: 0
     },
@@ -110,6 +115,12 @@ const userSchema = mongoose.Schema(
 );
 
 userSchema.pre('save', function (next) {
+  if (typeof this.email === 'string') {
+    this.email = this.email.trim().toLowerCase();
+    if (!this.email) {
+      this.email = undefined;
+    }
+  }
   this.createdAt = moment().format('YYYY-MM-DD');
   this.updatedAt = moment().format('YYYY-MM-DD');
   next();
