@@ -24,7 +24,12 @@ const getContractorList = async (req, res) => {
         // if (status) query.status = status; // Temporarily disabled status filter
         query.visibility = { $ne: 'private' }; // Show public and default/missing visibility profiles, exclude private
         
-        if (city) query["location.city"] = new RegExp(city, "i");
+        if (city) {
+            // Include contractors for the specific city AND contractors with "All India" national presence
+            query["location.city"] = {
+                $in: [new RegExp(city, "i"), new RegExp("^all india$", "i")]
+            };
+        }
         if (categoryId && categoryId !== 'all') query.categoryId = categoryId;
         if (providerType && providerType !== 'all') query.providerType = providerType;
         
