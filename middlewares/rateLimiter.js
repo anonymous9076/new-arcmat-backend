@@ -10,7 +10,7 @@ import { fail } from './responseHandler.js';
 export const createRateLimiter = (minutes, maxAttempts, message) => {
     return rateLimit({
         windowMs: minutes * 60 * 1000,
-        max: maxAttempts,
+        max: process.env.NODE_ENV === 'production' ? maxAttempts : 50,
         handler: (req, res) => {
             return fail(res, { message }, 429);
         },
@@ -20,7 +20,7 @@ export const createRateLimiter = (minutes, maxAttempts, message) => {
 };
 
 // Common limiters
-export const loginLimiter = createRateLimiter(15, 3, "Too many login attempts. Please try again after 15 minutes.");
+export const loginLimiter = createRateLimiter(5, 20, "Too many login attempts. Please try again after 15 minutes.");
 export const loginOtpLimiter = createRateLimiter(15, 10, "Too many OTP requests. Please try again after 15 minutes.");
 export const accountOtpLimiter = createRateLimiter(15, 10, "Too many OTP requests. Please try again after 15 minutes.");
 export const forgotPasswordLimiter = createRateLimiter(15, 10, "Too many password reset requests. Please try again after 15 minutes.");
