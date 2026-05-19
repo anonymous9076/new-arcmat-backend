@@ -23,7 +23,7 @@ const getContractorList = async (req, res) => {
         // Filtering
         // if (status) query.status = status; // Temporarily disabled status filter
         query.visibility = { $ne: 'private' }; // Show public and default/missing visibility profiles, exclude private
-        
+
         if (city) {
             // Include contractors for the specific city AND contractors with "All India" national presence
             query["location.city"] = {
@@ -32,7 +32,7 @@ const getContractorList = async (req, res) => {
         }
         if (categoryId && categoryId !== 'all') query.categoryId = categoryId;
         if (providerType && providerType !== 'all') query.providerType = providerType;
-        
+
         if (isFeatured !== undefined && isFeatured !== 'all') query.isFeatured = isFeatured === 'true';
         if (isVerified !== undefined && isVerified !== 'all') query.isVerified = isVerified === 'true';
         if (isTopRated !== undefined && isTopRated !== 'all') query.isTopRated = isTopRated === 'true';
@@ -52,7 +52,7 @@ const getContractorList = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
         const total = await Contractor.countDocuments(query);
         console.log(`getContractorList - Total documents matching query: ${total}`);
-        
+
         const data = await Contractor.find(query)
             .populate("userId", "name profile")
             .sort({ isFeatured: -1, isTopRated: -1, createdAt: -1 })
